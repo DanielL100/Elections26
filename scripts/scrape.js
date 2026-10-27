@@ -23,17 +23,32 @@ async function main() {
     const dom = new JSDOM(html);
     const doc = dom.window.document;
 
-    // 1. Extract Last Update timestamp, or fallback to final results status
+    // Helper to format current running timestamp (Israel Timezone)
+    const now = new Date();
+    const formattedTimestamp = now.toLocaleString('he-IL', {
+      timeZone: 'Asia/Jerusalem',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false
+    });
+
+    // 1. Extract Last Update timestamp
     const lastUpdateEl = doc.querySelector('.LastUpdate');
     let lastUpdate = '';
+    const isFinalResults = html.includes('תוצאות סופיות');
 
-    if (lastUpdateEl && lastUpdateEl.textContent.trim()) {
+    if (isFinalResults) {
+      // Append current execution timestamp to final results label
+      lastUpdate = `תוצאות סופיות - ${formattedTimestamp}`;
+    } else if (lastUpdateEl && lastUpdateEl.textContent.trim()) {
       lastUpdate = lastUpdateEl.textContent.trim();
-    } else if (html.includes('תוצאות סופיות')) {
-      lastUpdate = 'תוצאות סופיות';
     } else {
-      lastUpdate = 'תוצאות סופיות - בחירות 25';
+      lastUpdate = `עדכון - ${formattedTimestamp}`;
     }
+
     console.log(`Resolved lastUpdate status: "${lastUpdate}"`);
 
     // 2. Read existing data if present
@@ -48,18 +63,19 @@ async function main() {
       }
     }
 
-    // Only skip if it is NOT "תוצאות סופיות" and the timestamp hasn't changed
-    const isFinalResults = lastUpdate.includes('תוצאות סופיות');
+    // Skip update ONLY if it's NOT final results and live timestamp hasn't changed
     if (!isFinalResults && existingData && existingData.lastUpdate === lastUpdate) {
       console.log('Timestamp has not changed during live count. Skipping update.');
       process.exit(0);
     }
 
-    // Backup existing data if timestamp changed during live counting
-    if (!isFinalResults && existingData && existingData.lastUpdate && existingData.lastUpdate !== lastUpdate) {
+    // Create backup if previous data existed
+    if (existingData && existingData.lastUpdate) {
       const backupDir = path.join(__dirname, '../data');
       const cleanTs = existingData.lastUpdate.replace(/[\/:]/g, '.').slice(-16);
-      const backupName = `${cleanTs}.json`;
+      const backupName = existingData.lastUpdate.includes('סופיות')
+        ? 'סופיות.json'
+        : `${cleanTs}.json`;
         
       fs.writeFileSync(
         path.join(backupDir, backupName),
