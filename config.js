@@ -4,7 +4,7 @@
  */
 const CONFIG = {
   // Scraper target URL
-  electionUrl: 'https://votes26.bechirot.gov.il/',
+  electionUrl: 'https://votes25.bechirot.gov.il/',
 
   // Data path
   dataUrl: 'data/data.json',
