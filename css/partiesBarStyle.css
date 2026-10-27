@@ -1,0 +1,134 @@
+html {
+    scroll-behavior: smooth;
+    cursor: pointer;
+}
+
+body {
+    font-family: "Alef",
+                Arial,
+                sans-serif;
+}
+
+#cont {
+	position: relative;
+    margin-top: 18px;
+    overflow: visible;
+	margin-right: 25px;
+	margin-left: 25px;
+}
+
+#rangeslider {
+    position: absolute;
+    left: 0;
+    top: -13px;
+    width: 100%;
+}
+
+input[type='range'] {
+    z-index: 5;
+    -webkit-appearance: none;
+    background-color: transparent;
+    pointer-events: none;
+}
+
+input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    border: none;
+    height: 40px;
+    width: 3px;
+    border-radius: 0;
+    background: red;
+    pointer-events: none;
+}
+
+#lefty, #righty {
+    position: absolute;
+    bottom: 100%;
+    font-weight: bold;
+    user-select: none;
+}
+
+#prog_bar {
+    height: 27px;
+    margin-left: auto;
+    margin-right: auto;
+    overflow: visible;
+    border-radius: 10px;
+}
+
+.parties-mandats:first-child > .parties-mandats-inside {
+    border-radius: 0 10px 10px 0;
+}
+
+.parties-mandats:last-child > .parties-mandats-inside {
+    border-radius: 10px 0 0 10px;
+}
+
+.parties-mandats {
+    color: white;
+    font-size: 1.5em;
+    font-weight: bold;
+    margin: auto;
+}
+
+#prog_bar_parties {
+    height: 60px;
+    margin-left: auto;
+    margin-right: auto;
+    margin-bottom: 20px;
+    overflow: inherit;
+}
+
+.parties-names {
+    position: relative;
+    color: black;
+    font-size: 0.7rem;
+    font-weight: bold;
+    white-space: break-spaces;
+    text-align: center;
+}
+
+/* .parties-names:not(div:last-child)::after {
+    content: '';
+    position: absolute;
+    left: 0px;
+    top: 40%;
+    height: 25%;
+    border-left: 1px dashed #000;
+  } */
+
+#prog_bar_parties, #prog_bar_parties div {
+    background-color: transparent !important;
+}
+
+#updateTime {
+    margin-top: 35px;
+}
+
+@media (max-width: 500px) {
+    #fd:before {
+        width: 1px !important;
+    }
+}
+
+@media (min-width: 500px) and (max-width: 767px) {
+    #fd:before {
+        width: 2px !important;
+    }
+}
+
+@media (max-width: 991px) {
+    .parties-names {
+        font-size: 0.5rem;
+        white-space: pre;
+        transform: rotate(-55deg);
+        transform-origin: right top;
+        margin: auto;
+        width: 1px;
+        line-height: 8px;
+    }
+
+    #updateTime {
+        margin-top: 50px;
+    }
+}

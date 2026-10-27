@@ -1,0 +1,29 @@
+@font-face {
+    font-family: 'Alef Hebrew';
+    src: url(/fonts/Alef-Regular.ttf);
+}
+
+@font-face {
+    font-family: Assistant Regular;
+    src: url(/fonts/assistant.regular.ttf);
+}
+
+body {
+    font-family: "Alef Hebrew",
+                Assistant Regular,
+                Arial,
+                sans-serif;
+    text-align: right;
+}
+
+.navbar-nav {
+    text-align: right;
+}
+
+#terms {   
+    line-height: 1.7;
+}
+
+#terms p {
+    margin-bottom: 0.5rem;
+}
