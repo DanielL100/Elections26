@@ -4,7 +4,7 @@
  */
 const CONFIG = {
   // Where the GitHub Action scrapes results from
-  electionUrl: 'https://votes25.bechirot.gov.il/',
+  electionUrl: 'https://votes26.bechirot.gov.il/',
 
   // Where pages read data from. If GitHub Pages lags behind your commits,
   // switch to: 'https://raw.githubusercontent.com/USER/REPO/main/data/data.json'
