@@ -36,7 +36,7 @@ async function main() {
     }
     console.log(`Resolved lastUpdate status: "${lastUpdate}"`);
 
-    // 2. Check if data needs to be updated
+    // 2. Read existing data if present
     const dataPath = path.join(__dirname, '../data/data.json');
     let existingData = null;
 
@@ -48,17 +48,18 @@ async function main() {
       }
     }
 
-    if (existingData && existingData.lastUpdate === lastUpdate) {
-      console.log('Timestamp has not changed. Skipping update.');
+    // Only skip if it is NOT "תוצאות סופיות" and the timestamp hasn't changed
+    const isFinalResults = lastUpdate.includes('תוצאות סופיות');
+    if (!isFinalResults && existingData && existingData.lastUpdate === lastUpdate) {
+      console.log('Timestamp has not changed during live count. Skipping update.');
       process.exit(0);
     }
 
-    // Backup existing data if timestamp changed
-    if (existingData && existingData.lastUpdate) {
+    // Backup existing data if timestamp changed during live counting
+    if (!isFinalResults && existingData && existingData.lastUpdate && existingData.lastUpdate !== lastUpdate) {
       const backupDir = path.join(__dirname, '../data');
-      let backupName = existingData.lastUpdate.includes('סופיות')
-        ? 'סופיות.json'
-        : `${existingData.lastUpdate.replace(/[\/:]/g, '.').slice(-16)}.json`;
+      const cleanTs = existingData.lastUpdate.replace(/[\/:]/g, '.').slice(-16);
+      const backupName = `${cleanTs}.json`;
         
       fs.writeFileSync(
         path.join(backupDir, backupName),
@@ -108,7 +109,7 @@ async function main() {
         const name = th.textContent.trim();
         const char = tds[0] ? tds[0].textContent.trim() : '';
 
-        // Parsing layout for finalized election results
+        // Parsing layout for election results
         let percent = tds[2] ? tds[2].textContent.trim() : (tds[1] ? tds[1].textContent.trim() : '');
         let voteDiv = tds[3] ? tds[3].querySelector('div') || tds[3] : (tds[2] ? tds[2].querySelector('div') || tds[2] : null);
         let votes = voteDiv ? parseInt(voteDiv.textContent.replace(/,/g, '').trim(), 10) || 0 : 0;
