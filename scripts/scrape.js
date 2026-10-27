@@ -4,7 +4,7 @@ const { JSDOM } = require('jsdom');
 const CONFIG = require('../config.js');
 
 async function main() {
-  const targetUrl = CONFIG.electionUrl || 'https://votes26.bechirot.gov.il/';
+  const targetUrl = CONFIG.electionUrl || 'https://votes25.bechirot.gov.il/';
   console.log(`Fetching election data from: ${targetUrl}`);
 
   try {
@@ -23,14 +23,18 @@ async function main() {
     const dom = new JSDOM(html);
     const doc = dom.window.document;
 
-    // 1. Extract Last Update timestamp
+    // 1. Extract Last Update timestamp safely
     const lastUpdateEl = doc.querySelector('.LastUpdate');
-    if (!lastUpdateEl) {
-      console.log('LastUpdate element not found on page.');
-      process.exit(0);
+    let lastUpdate = '';
+
+    if (lastUpdateEl) {
+      lastUpdate = lastUpdateEl.textContent.trim();
+    } else if (html.includes('תוצאות סופיות')) {
+      lastUpdate = 'תוצאות סופיות';
+    } else {
+      lastUpdate = 'תוצאות סופיות - בחירות 25';
     }
-    const lastUpdate = lastUpdateEl.textContent.trim();
-    console.log(`Site last update: "${lastUpdate}"`);
+    console.log(`Resolved lastUpdate: "${lastUpdate}"`);
 
     // 2. Check if data needs to be updated
     const dataPath = path.join(__dirname, '../data/data.json');
@@ -56,9 +60,7 @@ async function main() {
       if (existingData.lastUpdate.includes('סופיות')) {
         backupName = 'סופיות.json';
       } else {
-        const cleanTs = existingData.lastUpdate
-          .replace(/[\/:]/g, '.')
-          .slice(-16);
+        const cleanTs = existingData.lastUpdate.replace(/[\/:]/g, '.').slice(-16);
         backupName = `${cleanTs}.json`;
       }
       fs.writeFileSync(
@@ -72,7 +74,15 @@ async function main() {
     // 3. Parse Tables
     const tables = doc.querySelectorAll('table');
     if (tables.length === 0) {
-      console.log('No tables found on target page.');
+      console.log('No tables found on page. Writing initial structure.');
+      const initialData = {
+        url: targetUrl,
+        lastUpdate: lastUpdate,
+        acceptedVotes: 0,
+        parties: []
+      };
+      fs.mkdirSync(path.dirname(dataPath), { recursive: true });
+      fs.writeFileSync(dataPath, JSON.stringify(initialData, null, 2), 'utf8');
       process.exit(0);
     }
 
@@ -80,9 +90,8 @@ async function main() {
     const isWayback = targetUrl.includes('archive.org');
     const tableOffset = isWayback ? 1 : 0;
 
-    // Detect if results are finalized based on first table headers count
     const headerCols = tables[tableOffset]?.querySelectorAll('tr:nth-child(1) th') || [];
-    const isEnded = headerCols.length === 5;
+    const isEnded = headerCols.length === 5 || html.includes('תוצאות סופיות');
 
     generalTableRows = tables[tableOffset]?.querySelectorAll('tr');
 
@@ -124,11 +133,11 @@ async function main() {
         let percent = '';
         let votes = 0;
 
-        if (isEnded) {
+        if (isEnded && tds.length >= 4) {
           percent = tds[2] ? tds[2].textContent.trim() : '';
           const voteDiv = tds[3] ? tds[3].querySelector('div') || tds[3] : null;
           votes = voteDiv ? parseInt(voteDiv.textContent.replace(/,/g, '').trim(), 10) || 0 : 0;
-        } else {
+        } else if (tds.length >= 3) {
           percent = tds[1] ? tds[1].textContent.trim() : '';
           const voteDiv = tds[2] ? tds[2].querySelector('div') || tds[2] : null;
           votes = voteDiv ? parseInt(voteDiv.textContent.replace(/,/g, '').trim(), 10) || 0 : 0;
@@ -140,11 +149,6 @@ async function main() {
       });
     }
 
-    if (partiesList.length === 0) {
-      console.log('No party data extracted.');
-      process.exit(0);
-    }
-
     // 4. Construct output JSON
     const outputData = {
       url: targetUrl,
@@ -153,14 +157,13 @@ async function main() {
       parties: partiesList
     };
 
-    // Ensure data directory exists
     const dataDir = path.dirname(dataPath);
     if (!fs.existsSync(dataDir)) {
       fs.mkdirSync(dataDir, { recursive: true });
     }
 
     fs.writeFileSync(dataPath, JSON.stringify(outputData, null, 2), 'utf8');
-    console.log('Successfully written data/data.json');
+    console.log(`Successfully updated ${dataPath}`);
 
   } catch (err) {
     console.error('Error executing scraper:', err);
