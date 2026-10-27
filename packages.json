@@ -1,0 +1,12 @@
+{
+  "name": "elections26-scraper",
+  "version": "1.0.0",
+  "description": "Elections 2026 data scraper for GitHub Pages",
+  "main": "scripts/scrape.js",
+  "scripts": {
+    "scrape": "node scripts/scrape.js"
+  },
+  "dependencies": {
+    "jsdom": "^24.0.0"
+  }
+}
