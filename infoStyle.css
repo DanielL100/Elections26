@@ -1,0 +1,38 @@
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    font-family: "Alef",
+                Arial,
+                sans-serif;
+}
+
+.navbar-nav {
+    text-align: right;
+}
+
+.row {
+    text-align: right;
+    margin-top: 10px;
+    margin-right: auto;
+    margin-left: auto;
+}
+
+b {
+    font-weight: bold !important;
+}
+
+#terms {   
+    line-height: 1.7;
+}
+
+#terms p {
+    margin-bottom: 0.5rem;
+}
+
+h2 {
+    text-align: right;
+    margin-top: 10px;
+    border-bottom:1px solid #DDD;
+}
