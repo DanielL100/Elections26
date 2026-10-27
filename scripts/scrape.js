@@ -23,18 +23,18 @@ async function main() {
     const dom = new JSDOM(html);
     const doc = dom.window.document;
 
-    // 1. Extract Last Update timestamp safely
+    // 1. Extract Last Update timestamp, or fallback to final results status
     const lastUpdateEl = doc.querySelector('.LastUpdate');
     let lastUpdate = '';
 
-    if (lastUpdateEl) {
+    if (lastUpdateEl && lastUpdateEl.textContent.trim()) {
       lastUpdate = lastUpdateEl.textContent.trim();
     } else if (html.includes('תוצאות סופיות')) {
       lastUpdate = 'תוצאות סופיות';
     } else {
       lastUpdate = 'תוצאות סופיות - בחירות 25';
     }
-    console.log(`Resolved lastUpdate: "${lastUpdate}"`);
+    console.log(`Resolved lastUpdate status: "${lastUpdate}"`);
 
     // 2. Check if data needs to be updated
     const dataPath = path.join(__dirname, '../data/data.json');
@@ -53,57 +53,35 @@ async function main() {
       process.exit(0);
     }
 
-    // Backup previous data if timestamp changed
+    // Backup existing data if timestamp changed
     if (existingData && existingData.lastUpdate) {
       const backupDir = path.join(__dirname, '../data');
-      let backupName = '';
-      if (existingData.lastUpdate.includes('סופיות')) {
-        backupName = 'סופיות.json';
-      } else {
-        const cleanTs = existingData.lastUpdate.replace(/[\/:]/g, '.').slice(-16);
-        backupName = `${cleanTs}.json`;
-      }
+      let backupName = existingData.lastUpdate.includes('סופיות')
+        ? 'סופיות.json'
+        : `${existingData.lastUpdate.replace(/[\/:]/g, '.').slice(-16)}.json`;
+        
       fs.writeFileSync(
         path.join(backupDir, backupName),
         JSON.stringify(existingData, null, 2),
         'utf8'
       );
-      console.log(`Created backup: ${backupName}`);
+      console.log(`Created backup file: ${backupName}`);
     }
 
-    // 3. Parse Tables
+    // 3. Extract Table Rows
     const tables = doc.querySelectorAll('table');
     if (tables.length === 0) {
-      console.log('No tables found on page. Writing initial structure.');
-      const initialData = {
-        url: targetUrl,
-        lastUpdate: lastUpdate,
-        acceptedVotes: 0,
-        parties: []
-      };
-      fs.mkdirSync(path.dirname(dataPath), { recursive: true });
-      fs.writeFileSync(dataPath, JSON.stringify(initialData, null, 2), 'utf8');
-      process.exit(0);
+      console.log('No tables found on target page.');
+      process.exit(1);
     }
 
-    let generalTableRows, partiesTableRows;
     const isWayback = targetUrl.includes('archive.org');
     const tableOffset = isWayback ? 1 : 0;
 
-    const headerCols = tables[tableOffset]?.querySelectorAll('tr:nth-child(1) th') || [];
-    const isEnded = headerCols.length === 5 || html.includes('תוצאות סופיות');
+    const generalTableRows = tables[tableOffset]?.querySelectorAll('tr');
+    const partiesTableRows = tables[tableOffset + 1]?.querySelectorAll('tr');
 
-    generalTableRows = tables[tableOffset]?.querySelectorAll('tr');
-
-    if (isEnded) {
-      console.log('Table layout: Finalized Results');
-      partiesTableRows = tables[tableOffset + 1]?.querySelectorAll('tr');
-    } else {
-      console.log('Table layout: In-Progress Counting');
-      partiesTableRows = tables[tableOffset + 1]?.querySelectorAll('tr');
-    }
-
-    // Extract General Summary info
+    // Extract total valid votes (קולות כשרים)
     let acceptedVotes = 0;
     if (generalTableRows && generalTableRows.length >= 2) {
       const ths = generalTableRows[0].querySelectorAll('th');
@@ -119,29 +97,21 @@ async function main() {
       });
     }
 
-    // Extract Parties Info
+    // Extract data for each party
     const partiesList = [];
     if (partiesTableRows) {
       partiesTableRows.forEach((row) => {
         const th = row.querySelector('th');
         const tds = row.querySelectorAll('td');
-        if (!th || tds.length === 0) return;
+        if (!th || tds.length < 3) return;
 
         const name = th.textContent.trim();
         const char = tds[0] ? tds[0].textContent.trim() : '';
 
-        let percent = '';
-        let votes = 0;
-
-        if (isEnded && tds.length >= 4) {
-          percent = tds[2] ? tds[2].textContent.trim() : '';
-          const voteDiv = tds[3] ? tds[3].querySelector('div') || tds[3] : null;
-          votes = voteDiv ? parseInt(voteDiv.textContent.replace(/,/g, '').trim(), 10) || 0 : 0;
-        } else if (tds.length >= 3) {
-          percent = tds[1] ? tds[1].textContent.trim() : '';
-          const voteDiv = tds[2] ? tds[2].querySelector('div') || tds[2] : null;
-          votes = voteDiv ? parseInt(voteDiv.textContent.replace(/,/g, '').trim(), 10) || 0 : 0;
-        }
+        // Parsing layout for finalized election results
+        let percent = tds[2] ? tds[2].textContent.trim() : (tds[1] ? tds[1].textContent.trim() : '');
+        let voteDiv = tds[3] ? tds[3].querySelector('div') || tds[3] : (tds[2] ? tds[2].querySelector('div') || tds[2] : null);
+        let votes = voteDiv ? parseInt(voteDiv.textContent.replace(/,/g, '').trim(), 10) || 0 : 0;
 
         if (name && char) {
           partiesList.push({ name, char, votes, percent });
@@ -149,7 +119,7 @@ async function main() {
       });
     }
 
-    // 4. Construct output JSON
+    // 4. Construct output JSON and write file
     const outputData = {
       url: targetUrl,
       lastUpdate: lastUpdate,
@@ -163,7 +133,7 @@ async function main() {
     }
 
     fs.writeFileSync(dataPath, JSON.stringify(outputData, null, 2), 'utf8');
-    console.log(`Successfully updated ${dataPath}`);
+    console.log(`Successfully generated data.json with election results.`);
 
   } catch (err) {
     console.error('Error executing scraper:', err);
