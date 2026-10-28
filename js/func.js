@@ -43,7 +43,7 @@ function fillGeneralInfo(data) {
   let h = '';
   h += cell('קולות כשרים', hasVotes ? fmt(r.accepted) : '0');
   h += cell('קולות למנדט', hasVotes ? fmt(r.votesPerSeat.toFixed(2)) : '0');
-  h += cell('אחוז קולות שנספרו', hasVotes ? fmt((((parseInt(data["general"]["קולות כשרים עד עתה"].replaceAll(",", "")) + parseInt(data["general"]["קולות פסולים עד עתה"].replaceAll(",", "")))/parseInt(data["general"]["קולות עד עתה"].replaceAll(",", ""))) * 100).toFixed(2)) : '0');
+  h += cell('אחוז קולות שנספרו', hasVotes ? fmt((((parseInt(data["general"]["קולות כשרים עד עתה"].replaceAll(",", "")) + parseInt(data["general"]["קולות פסולים עד עתה"].replaceAll(",", "")))/parseInt(data["general"]["מספר בעלי זכות בחירה"].replaceAll(",", ""))) * 100).toFixed(2)) : '0');
   h += cell('קולות מבוזבזים ' + INFO_ICON('סך הקולות של מפלגות שלא עברו את אחוז החסימה'), fmt(r.trashVotes));
   h += cell('מנדטים עודפים ' + INFO_ICON('מספר המנדטים שנותרו לחלק בין המפלגות שעברו את אחוז החסימה'), r.leftover);
   const tip = 'האם המפלגה הרוויחה מנדט נוסף מהסכם עודפים עם המפלגה המצויינת למטה או מחוק בדר-עופר';
