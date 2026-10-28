@@ -6,7 +6,7 @@ from bs4 import BeautifulSoup
 from playwright.async_api import async_playwright
 from playwright_stealth import Stealth  # <-- Updated import
 
-URL = "https://votes25.bechirot.gov.il/"
+URL = "https://votes26.bechirot.gov.il/"
 DATA_DIR = "data"
 JSON_PATH = os.path.join(DATA_DIR, "data.json")
 
