@@ -12,10 +12,6 @@ body {
     text-align: right;
 }
 
-.navbar-logo-white {
-    filter: brightness(0) invert(1);
-}
-
 .row {
     text-align: right;
     margin-top: 10px;
