@@ -3,7 +3,7 @@ name: Run Election Data Scraper
 on:
   schedule:
     # Runs every 30 minutes
-    - cron: '*/30 * * * *'
+    - cron: '*/15 * * * *'
   workflow_dispatch: # Allows manual trigger via GitHub UI
 
 jobs:
