@@ -4,23 +4,29 @@ import os
 import re
 from bs4 import BeautifulSoup
 from playwright.async_api import async_playwright
-from playwright_stealth import Stealth  # <-- Updated import
+from playwright_stealth import Stealth
 
-URL = "https://votes26.bechirot.gov.il/"
+URL = "https://votes25.bechirot.gov.il/"
+WAYBACK_URL_PREFIX = "https://web.archive.org/web/"
 DATA_DIR = "data"
 JSON_PATH = os.path.join(DATA_DIR, "data.json")
 
-def sanitize_filename(filename):
-    """Sanitizes timestamp string for valid OS filename creation."""
-    clean_str = filename.replace(":", ".").replace("/", ".")
+def sanitize_backup_filename(last_update_str):
+    """Replicates PHP logic for timestamped backup filenames."""
+    if "סופיות" in last_update_str:
+        return "סופיות.json"
+    
+    # PHP: substr(str_replace(":", ".", str_replace("/", ".", $data["lastUpdate"])), strlen($data["lastUpdate"]) - 16)
+    clean_str = last_update_str.replace(":", ".").replace("/", ".")
     if len(clean_str) > 16:
         clean_str = clean_str[-16:]
     return f"{clean_str}.json"
 
 async def scrape():
     os.makedirs(DATA_DIR, exist_ok=True)
-    
-    # Wrap the Playwright instance with Stealth 2.x API
+    is_wayback = URL.startswith(WAYBACK_URL_PREFIX)
+
+    # 1. Fetch Page with Playwright Stealth (Cloudflare Bypass)
     async with Stealth().use_async(async_playwright()) as p:
         browser = await p.chromium.launch(
             headless=True,
@@ -42,72 +48,67 @@ async def scrape():
 
         print(f"Navigating to {URL}...")
         try:
-            # Navigate and wait until network idle (allows Cloudflare JS challenge to complete)
-            await page.goto(URL, wait_until="networkidle", timeout=60000)
+            response = await page.goto(URL, wait_until="networkidle", timeout=60000)
+            status_code = response.status if response else 0
             
-            # Wait for content or table elements to ensure DOM is fully rendered
+            if status_code != 200:
+                print(f"HTTP Status: {status_code}. Expected 200.")
+                await browser.close()
+                return
+
             await page.wait_for_selector("table", timeout=30000)
             html_content = await page.content()
         except Exception as e:
-            print(f"Failed to fetch page or pass challenge: {e}")
+            print(f"Error loading page: {e}")
             await browser.close()
             return
-        
+
         await browser.close()
 
     soup = BeautifulSoup(html_content, 'html.parser')
 
-    # Extract LastUpdate text
+    # 2. Extract LastUpdate string
     last_update_el = soup.select_one(".LastUpdate")
     last_update = last_update_el.get_text(strip=True) if last_update_el else ""
+    print(f"LastUpdate: '{last_update}'")
 
-    print(f"Extracted LastUpdate: '{last_update}'")
-
-    # Check existing data to evaluate if an update is needed
+    # 3. Check if file update is needed (PHP lock & timestamp check logic)
     need_to_change = False
-    existing_json = {}
-    
+    existing_data = {}
+
     if os.path.exists(JSON_PATH):
         try:
             with open(JSON_PATH, "r", encoding="utf-8") as f:
-                existing_json = json.load(f)
-                
-            prev_last_update = existing_json.get("lastUpdate", "")
-            if prev_last_update:
-                print("Last update exists in file.")
-                if prev_last_update != last_update:
-                    print("Time changed, backing up old data...")
-                    
-                    if "סופיות" in prev_last_update:
-                        backup_filename = "סופיות.json"
-                    else:
-                        backup_filename = sanitize_filename(prev_last_update)
-                        
+                existing_data = json.load(f)
+
+            if "lastUpdate" in existing_data:
+                print("Last update exist")
+                if existing_data["lastUpdate"] != last_update:
+                    print("Time changed")
+                    backup_filename = sanitize_backup_filename(existing_data["lastUpdate"])
                     backup_path = os.path.join(DATA_DIR, backup_filename)
+                    
                     with open(backup_path, "w", encoding="utf-8") as bf:
-                        json.dump(existing_json, bf, ensure_ascii=False, indent=4)
-                        
+                        json.dump(existing_data, bf, ensure_ascii=False, indent=4)
+                    
                     need_to_change = True
                 else:
-                    print("Time was not changed. Skipping rewrite.")
+                    print("Time was not changed")
             else:
+                print("Last update does not exist")
                 need_to_change = True
         except Exception as e:
-            print(f"Error reading existing JSON: {e}")
+            print(f"Error reading existing file: {e}")
             need_to_change = True
     else:
-        print("Data file does not exist. Creating new file.")
+        print("Creates File")
         need_to_change = True
 
     if not need_to_change:
         return
 
-    # Parse Tables Logic
+    # 4. Parse Tables based on PHP branch conditions
     tables = soup.find_all("table")
-    if not tables:
-        print("No tables found on page.")
-        return
-
     general = {}
     parties = []
     parties_char = []
@@ -115,41 +116,76 @@ async def scrape():
     votes_parties = []
     general_is_empty = True
 
-    # Parse General Info Table (Table 0)
-    general_table_rows = tables[0].find_all("tr")
-    if len(general_table_rows) >= 2:
-        headers = [th.get_text(strip=True) for th in general_table_rows[0].find_all("th")]
-        cells = [td.get_text(strip=True) for td in general_table_rows[1].find_all("td")]
-        
-        for key, val in zip(headers, cells):
-            general[key] = val
-            if val != "" and val != "0":
-                general_is_empty = False
+    try:
+        # Check condition for ended vs running tables
+        t1_rows = tables[1].find_all("tr") if len(tables) > 1 else []
+        t1_th_count = len(t1_rows[0].find_all("th")) if t1_rows and t1_rows[0].find_all("th") else 0
+        t2_rows = tables[2].find_all("tr") if len(tables) > 2 else []
+        t2_th_count = len(t2_rows[0].find_all("th")) if t2_rows and t2_rows[0].find_all("th") else 0
 
-    # Parse Parties Table
-    parties_table_idx = 1 if len(tables) > 1 else 0
-    if len(tables) > 2 and len(tables[1].find_all("tr")) == 1:
-        parties_table_idx = 2
+        if is_wayback and t2_th_count == 5:
+            print("WAYBACK - ENDED")
+            gen_table_idx, parties_table_idx = 1, 2
+        elif is_wayback:
+            print("WAYBACK - STILL RUNNING")
+            gen_table_idx = 1
+            parties_table_idx = 3 if len(tables[1].find_all("tr")) == 1 else 2
+        elif t1_th_count == 5:
+            print("Website - ENDED")
+            gen_table_idx = 0
+            parties_table_idx = 2 if len(tables[1].find_all("tr")) == 1 else 1
+        else:
+            print("Website - STILL RUNNING")
+            gen_table_idx, parties_table_idx = 0, 1
 
-    parties_table_rows = tables[parties_table_idx].find_all("tr")
-    for row in parties_table_rows:
-        th = row.find("th")
-        tds = row.find_all("td")
-        
-        if th and tds:
+        # Extract General Summary Table
+        gen_rows = tables[gen_table_idx].find_all("tr")
+        if len(gen_rows) >= 2:
+            th_cells = gen_rows[0].find_all("th")
+            td_cells = gen_rows[1].find_all("td")
+            for idx, th in enumerate(th_cells):
+                header_name = th.get_text(strip=True)
+                val = td_cells[idx].get_text(strip=True) if idx < len(td_cells) else ""
+                general[header_name] = val
+                if val != "" and val != "0":
+                    general_is_empty = False
+
+        # Extract Parties Table
+        parties_rows = tables[parties_table_idx].find_all("tr")
+        for row in parties_rows:
+            tds = row.find_all("td")
+            th = row.find("th")
+            if not tds or not th:
+                continue
+
             party_name = th.get_text(strip=True)
-            for idx, cell in enumerate(tds):
+            
+            for key, cell in enumerate(tds):
                 cell_text = cell.get_text(strip=True)
-                if idx == 0:
+                if key == 0:
                     parties.append(party_name)
                     parties_char.append(cell_text)
-                elif idx == 1:
-                    percent_parties.append(cell_text)
-                elif idx == 2:
+                elif key == 1 and (is_wayback or gen_table_idx == 0):
+                    # In "Website - STILL RUNNING", col 1 is percentage, col 2 is votes
+                    # In "Website - ENDED", col 2 is percentage, col 3 is votes
+                    if t1_th_count != 5 and not is_wayback:
+                        percent_parties.append(cell_text)
+                elif key == 2:
+                    if t1_th_count == 5 or is_wayback:
+                        percent_parties.append(cell_text)
+                    else:
+                        div = cell.find("div")
+                        votes_parties.append(div.get_text(strip=True) if div else cell_text)
+                elif key == 3 and (t1_th_count == 5 or is_wayback):
                     div = cell.find("div")
-                    div_text = div.get_text(strip=True) if div else cell_text
-                    votes_parties.append(div_text)
+                    votes_parties.append(div.get_text(strip=True) if div else cell_text)
 
+    except Exception as e:
+        print(f"NO DATA AVAILABLE: {e}")
+
+    print(f"general is empty? {general_is_empty}")
+
+    # 5. Write to data/data.json in exact PHP schema
     if not general_is_empty:
         output_data = {
             "url": URL,
@@ -163,9 +199,10 @@ async def scrape():
 
         with open(JSON_PATH, "w", encoding="utf-8") as f:
             json.dump(output_data, f, ensure_ascii=False, indent=4)
-        print(f"Successfully updated {JSON_PATH}")
+
+        print(f"Successfully saved exact PHP output format to {JSON_PATH}")
     else:
-        print("General data table was empty. No changes written.")
+        print("Didn't change since there is no data")
 
 if __name__ == "__main__":
     asyncio.run(scrape())
