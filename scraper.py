@@ -1,13 +1,11 @@
 import asyncio
 import json
 import os
-import re
 from bs4 import BeautifulSoup
 from playwright.async_api import async_playwright
 from playwright_stealth import Stealth
 
 URL = "https://votes26.bechirot.gov.il/"
-WAYBACK_URL_PREFIX = "https://web.archive.org/web/"
 DATA_DIR = "data"
 JSON_PATH = os.path.join(DATA_DIR, "data.json")
 
@@ -16,7 +14,7 @@ def sanitize_backup_filename(last_update_str):
     if "סופיות" in last_update_str:
         return "סופיות.json"
     
-    # PHP: substr(str_replace(":", ".", str_replace("/", ".", $data["lastUpdate"])), strlen($data["lastUpdate"]) - 16)
+    # Replicates: substr(str_replace(":", ".", str_replace("/", ".", $data["lastUpdate"])), strlen($data["lastUpdate"]) - 16)
     clean_str = last_update_str.replace(":", ".").replace("/", ".")
     if len(clean_str) > 16:
         clean_str = clean_str[-16:]
@@ -24,9 +22,8 @@ def sanitize_backup_filename(last_update_str):
 
 async def scrape():
     os.makedirs(DATA_DIR, exist_ok=True)
-    is_wayback = URL.startswith(WAYBACK_URL_PREFIX)
 
-    # 1. Fetch Page with Playwright Stealth (Cloudflare Bypass)
+    # 1. Fetch Page with Playwright Stealth (Cloudflare / WAF Evasion)
     async with Stealth().use_async(async_playwright()) as p:
         browser = await p.chromium.launch(
             headless=True,
@@ -72,7 +69,7 @@ async def scrape():
     last_update = last_update_el.get_text(strip=True) if last_update_el else ""
     print(f"LastUpdate: '{last_update}'")
 
-    # 3. Check if file update is needed (PHP lock & timestamp check logic)
+    # 3. Check if JSON needs updating (PHP file lock & lastUpdate comparison logic)
     need_to_change = False
     existing_data = {}
 
@@ -84,7 +81,7 @@ async def scrape():
             if "lastUpdate" in existing_data:
                 print("Last update exist")
                 if existing_data["lastUpdate"] != last_update:
-                    print("Time changed")
+                    print("Time changed, creating backup...")
                     backup_filename = sanitize_backup_filename(existing_data["lastUpdate"])
                     backup_path = os.path.join(DATA_DIR, backup_filename)
                     
@@ -107,7 +104,7 @@ async def scrape():
     if not need_to_change:
         return
 
-    # 4. Parse Tables based on PHP branch conditions
+    # 4. Parse Tables matching your PHP logic
     tables = soup.find_all("table")
     general = {}
     parties = []
@@ -117,26 +114,17 @@ async def scrape():
     general_is_empty = True
 
     try:
-        # Check condition for ended vs running tables
         t1_rows = tables[1].find_all("tr") if len(tables) > 1 else []
         t1_th_count = len(t1_rows[0].find_all("th")) if t1_rows and t1_rows[0].find_all("th") else 0
-        t2_rows = tables[2].find_all("tr") if len(tables) > 2 else []
-        t2_th_count = len(t2_rows[0].find_all("th")) if t2_rows and t2_rows[0].find_all("th") else 0
 
-        if is_wayback and t2_th_count == 5:
-            print("WAYBACK - ENDED")
-            gen_table_idx, parties_table_idx = 1, 2
-        elif is_wayback:
-            print("WAYBACK - STILL RUNNING")
-            gen_table_idx = 1
-            parties_table_idx = 3 if len(tables[1].find_all("tr")) == 1 else 2
-        elif t1_th_count == 5:
+        if t1_th_count == 5:
             print("Website - ENDED")
             gen_table_idx = 0
-            parties_table_idx = 2 if len(tables[1].find_all("tr")) == 1 else 1
+            parties_table_idx = 2 if len(t1_rows) == 1 else 1
         else:
             print("Website - STILL RUNNING")
-            gen_table_idx, parties_table_idx = 0, 1
+            gen_table_idx = 0
+            parties_table_idx = 1
 
         # Extract General Summary Table
         gen_rows = tables[gen_table_idx].find_all("tr")
@@ -165,18 +153,15 @@ async def scrape():
                 if key == 0:
                     parties.append(party_name)
                     parties_char.append(cell_text)
-                elif key == 1 and (is_wayback or gen_table_idx == 0):
-                    # In "Website - STILL RUNNING", col 1 is percentage, col 2 is votes
-                    # In "Website - ENDED", col 2 is percentage, col 3 is votes
-                    if t1_th_count != 5 and not is_wayback:
-                        percent_parties.append(cell_text)
+                elif key == 1 and t1_th_count != 5:
+                    percent_parties.append(cell_text)
                 elif key == 2:
-                    if t1_th_count == 5 or is_wayback:
+                    if t1_th_count == 5:
                         percent_parties.append(cell_text)
                     else:
                         div = cell.find("div")
                         votes_parties.append(div.get_text(strip=True) if div else cell_text)
-                elif key == 3 and (t1_th_count == 5 or is_wayback):
+                elif key == 3 and t1_th_count == 5:
                     div = cell.find("div")
                     votes_parties.append(div.get_text(strip=True) if div else cell_text)
 
@@ -185,7 +170,7 @@ async def scrape():
 
     print(f"general is empty? {general_is_empty}")
 
-    # 5. Write to data/data.json in exact PHP schema
+    # 5. Save JSON Output (Exact PHP Schema)
     if not general_is_empty:
         output_data = {
             "url": URL,
@@ -200,7 +185,7 @@ async def scrape():
         with open(JSON_PATH, "w", encoding="utf-8") as f:
             json.dump(output_data, f, ensure_ascii=False, indent=4)
 
-        print(f"Successfully saved exact PHP output format to {JSON_PATH}")
+        print(f"Successfully saved to {JSON_PATH}")
     else:
         print("Didn't change since there is no data")
 
