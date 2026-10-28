@@ -94,7 +94,7 @@ async function init() {
     });
   };
   pie('netanyahu-block', 'netanyahu', 'right');
-  pie('lapid-block', 'lapid', 'left');
+  pie('eizenkot-block', 'eizenkot', 'left');
 
   /* wasted votes (everything in "seat equivalents") */
   const seatEq = (v) => v / r.votesPerSeat;
