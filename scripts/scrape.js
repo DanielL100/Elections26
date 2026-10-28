@@ -93,6 +93,7 @@ const BROWSER_HEADERS = {
 };
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const isWafChallenge = (html) => /AwsWafIntegration|awsWafCookieDomainList|token\.awswaf\.com/.test(html);
 
 function saveDebug(url, status, headers, html) {
   fs.mkdirSync(path.dirname(debugPath), { recursive: true });
@@ -111,7 +112,14 @@ async function fetchWithBrowser(url) {
   try {
     const page = await browser.newPage({ locale: 'he-IL' });
     await page.goto(url, { waitUntil: 'networkidle', timeout: 60000 });
-    await page.waitForSelector('#tableDiv table', { timeout: 20000 }).catch(() => {});
+    // The WAF challenge page runs its JS, gets a token, then reloads itself into the real page.
+    await page
+      .waitForFunction(
+        () => document.querySelector('#tableDiv table') || /ממתינים לספירת הקולות/.test(document.body.innerText),
+        null,
+        { timeout: 45000 }
+      )
+      .catch(() => {});
     return await page.content();
   } finally {
     await browser.close();
@@ -138,6 +146,20 @@ async function loadHtml() {
         console.log(`  status=${status} bodyLength=${html.length} server=${headers.server || '-'} content-type=${headers['content-type'] || '-'}`);
         console.log(`  start: ${clean(html).slice(0, 200) || '(EMPTY BODY)'}`);
         if (html.includes('id="tableDiv"')) return { url, html };
+
+        if (isWafChallenge(html) && process.env.USE_BROWSER !== '1') {
+          console.warn('  AWS WAF JS challenge detected; retrying in a real headless browser (Playwright)...');
+          try {
+            const bhtml = await fetchWithBrowser(url);
+            console.log(`  browser bodyLength=${bhtml.length} challengeStillShown=${isWafChallenge(bhtml)}`);
+            if (bhtml.includes('id="tableDiv"')) return { url, html: bhtml };
+            saveDebug(url, 'browser', {}, bhtml);
+          } catch (e) {
+            console.warn(`  browser fallback failed: ${e.message}`);
+            console.warn('  Install it with: npm i playwright && npx playwright install --with-deps chromium');
+          }
+          break; // do not hammer a challenge page with plain retries
+        }
         saveDebug(url, status, headers, html);
         if (html.length > 0) break; // real page without table: counting not started, retrying will not help
         await sleep(2000 * attempt);  // empty body: retry
