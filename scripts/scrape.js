@@ -81,21 +81,70 @@ function parse(html) {
   return { lastUpdate, summary, parties };
 }
 
+const BROWSER_HEADERS = {
+  ...HEADERS,
+  'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+  'Cache-Control': 'no-cache',
+  'Upgrade-Insecure-Requests': '1',
+  'Sec-Fetch-Dest': 'document',
+  'Sec-Fetch-Mode': 'navigate',
+  'Sec-Fetch-Site': 'none',
+  'Sec-Fetch-User': '?1'
+};
+
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+function saveDebug(url, status, headers, html) {
+  fs.mkdirSync(path.dirname(debugPath), { recursive: true });
+  fs.writeFileSync(debugPath, html || '', 'utf8');
+  fs.writeFileSync(
+    debugPath.replace(/\.html$/, '-meta.json'),
+    JSON.stringify({ url, status, bodyLength: (html || '').length, headers }, null, 2),
+    'utf8'
+  );
+}
+
+// Real browser fallback: USE_BROWSER=1 (needs: npm i playwright && npx playwright install chromium)
+async function fetchWithBrowser(url) {
+  const { chromium } = require('playwright');
+  const browser = await chromium.launch();
+  try {
+    const page = await browser.newPage({ locale: 'he-IL' });
+    await page.goto(url, { waitUntil: 'networkidle', timeout: 60000 });
+    await page.waitForSelector('#tableDiv table', { timeout: 20000 }).catch(() => {});
+    return await page.content();
+  } finally {
+    await browser.close();
+  }
+}
+
 async function loadHtml() {
   // Local file for testing: node scripts/scrape.js path/to/page.html
   if (process.argv[2]) return { url: 'file:' + process.argv[2], html: fs.readFileSync(process.argv[2], 'utf8') };
+
   for (const url of candidateUrls()) {
-    try {
-      console.log(`Fetching ${url}`);
-      const res = await fetch(url, { headers: HEADERS });
-      if (!res.ok) { console.warn(`  HTTP ${res.status}`); continue; }
-      const html = await res.text();
-      if (html.includes('id="tableDiv"')) return { url, html };
-      console.warn('  page loaded but no results table (counting not started?)');
-      fs.mkdirSync(path.dirname(debugPath), { recursive: true });
-      fs.writeFileSync(debugPath, html, 'utf8');
-    } catch (e) {
-      console.warn(`  failed: ${e.message}`);
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try {
+        console.log(`Fetching ${url} (attempt ${attempt})`);
+        let html, status = 'browser', headers = {};
+        if (process.env.USE_BROWSER === '1') {
+          html = await fetchWithBrowser(url);
+        } else {
+          const res = await fetch(url, { headers: BROWSER_HEADERS, redirect: 'follow' });
+          status = res.status;
+          headers = Object.fromEntries(res.headers.entries());
+          html = await res.text();
+        }
+        console.log(`  status=${status} bodyLength=${html.length} server=${headers.server || '-'} content-type=${headers['content-type'] || '-'}`);
+        console.log(`  start: ${clean(html).slice(0, 200) || '(EMPTY BODY)'}`);
+        if (html.includes('id="tableDiv"')) return { url, html };
+        saveDebug(url, status, headers, html);
+        if (html.length > 0) break; // real page without table: counting not started, retrying will not help
+        await sleep(2000 * attempt);  // empty body: retry
+      } catch (e) {
+        console.warn(`  failed: ${e.message}`);
+        await sleep(2000 * attempt);
+      }
     }
   }
   return null;
