@@ -40,9 +40,10 @@ const CONFIG = {
     { char: 'ב',    key: 'K', name: 'עוצמה יהודית', color: '#C2185B', bloc: 'netanyahu' },
     { char: 'ט',    key: 'Z', name: 'הציונות הדתית', color: '#D32F2F', bloc: 'netanyahu' },
     { char: 'ך',    key: 'V', name: 'עמך ישראל (עופר וינטר)', color: '#FF9800', bloc: 'netanyahu' },
-    { char: 'מחל',  key: 'L', name: 'הליכוד', color: '#1976D2', bloc: 'netanyahu' },
     { char: 'שס',   key: 'S', name: 'ש"ס', color: '#303F9F', bloc: 'netanyahu' },
     { char: 'ג',    key: 'G', name: 'יהדות התורה', color: '#388E3C', bloc: 'netanyahu' },
+    { char: 'מחל',  key: 'L', name: 'הליכוד', color: '#1976D2', bloc: 'netanyahu' },
+
     
     { char: 'רק',   key: 'B', name: 'ביחד (בנט)', color: '#F57C00', bloc: 'eizenkot' },
     { char: 'דרך',  key: 'E', name: 'ישר! (איזנקוט)', color: '#00796B', bloc: 'eizenkot' },
