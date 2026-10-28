@@ -1,1 +1,61 @@
+# Save as: .github/workflows/scrape.yml
+name: Scrape election results
 
+on:
+  schedule:
+    - cron: '*/10 * * * *'   # every 10 minutes (GitHub's minimum is 5; runs can be delayed)
+  workflow_dispatch:         # manual "Run workflow" button
+
+permissions:
+  contents: write            # needed to commit data/data.json
+
+concurrency:
+  group: scrape-election
+  cancel-in-progress: false  # never overlap two scrapes
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Scrape election data
+        run: node scripts/scrape.js
+
+      - name: Commit updated data
+        run: |
+          if git diff --quiet -- data/data.json; then
+            echo "No changes to data/data.json"
+            exit 0
+          fi
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/data.json
+          git commit -m "Update election data"
+          git pull --rebase
+          git push
+
+      - name: Upload debug files
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: scrape-debug
+          path: |
+            data/debug.html
+            data/debug-meta.json
+          if-no-files-found: ignore
+          retention-days: 3
