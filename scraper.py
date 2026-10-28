@@ -4,7 +4,7 @@ import os
 import re
 from bs4 import BeautifulSoup
 from playwright.async_api import async_playwright
-from playwright_stealth import stealth_async
+from playwright_stealth import Stealth  # <-- Updated import
 
 URL = "https://votes25.bechirot.gov.il/"
 DATA_DIR = "data"
@@ -20,8 +20,8 @@ def sanitize_filename(filename):
 async def scrape():
     os.makedirs(DATA_DIR, exist_ok=True)
     
-    async with async_playwright() as p:
-        # Launch Chromium with anti-bot detection flags
+    # Wrap the Playwright instance with Stealth 2.x API
+    async with Stealth().use_async(async_playwright()) as p:
         browser = await p.chromium.launch(
             headless=True,
             args=[
@@ -39,7 +39,6 @@ async def scrape():
         )
         
         page = await context.new_page()
-        await stealth_async(page)
 
         print(f"Navigating to {URL}...")
         try:
@@ -64,7 +63,7 @@ async def scrape():
 
     print(f"Extracted LastUpdate: '{last_update}'")
 
-    # Check existing data to evaluate if an update is needed (PHP logic conversion)
+    # Check existing data to evaluate if an update is needed
     need_to_change = False
     existing_json = {}
     
@@ -79,7 +78,6 @@ async def scrape():
                 if prev_last_update != last_update:
                     print("Time changed, backing up old data...")
                     
-                    # Create timestamped backup file
                     if "סופיות" in prev_last_update:
                         backup_filename = "סופיות.json"
                     else:
@@ -128,7 +126,7 @@ async def scrape():
             if val != "" and val != "0":
                 general_is_empty = False
 
-    # Parse Parties Table (Table 1 or Table 2 depending on DOM variations)
+    # Parse Parties Table
     parties_table_idx = 1 if len(tables) > 1 else 0
     if len(tables) > 2 and len(tables[1].find_all("tr")) == 1:
         parties_table_idx = 2
@@ -163,7 +161,6 @@ async def scrape():
             "votesParties": votes_parties
         }
 
-        # Write output to data/data.json formatted cleanly
         with open(JSON_PATH, "w", encoding="utf-8") as f:
             json.dump(output_data, f, ensure_ascii=False, indent=4)
         print(f"Successfully updated {JSON_PATH}")
