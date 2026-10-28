@@ -10,7 +10,7 @@ DATA_DIR = "data"
 JSON_PATH = os.path.join(DATA_DIR, "data.json")
 
 def sanitize_backup_filename(last_update_str):
-    """Replicates PHP logic for timestamped backup filenames."""
+    """Replicates backup logic for timestamped JSON files."""
     if "סופיות" in last_update_str:
         return "סופיות.json"
     
@@ -22,7 +22,7 @@ def sanitize_backup_filename(last_update_str):
 async def scrape():
     os.makedirs(DATA_DIR, exist_ok=True)
 
-    # 1. Fetch Page with Playwright Stealth
+    # 1. Fetch Page with Playwright Stealth (Evades WAF & Cloudflare challenges)
     async with Stealth().use_async(async_playwright()) as p:
         browser = await p.chromium.launch(
             headless=True,
@@ -52,7 +52,7 @@ async def scrape():
                 await browser.close()
                 return
 
-            # Wait for either the info boxes container or parties table to render
+            # Wait for content or tables to fully render in the DOM
             await page.wait_for_selector(".icn-boxes-data, table", timeout=45000)
             html_content = await page.content()
         except Exception as e:
@@ -64,12 +64,18 @@ async def scrape():
 
     soup = BeautifulSoup(html_content, 'html.parser')
 
-    # 2. Extract LastUpdate string
-    last_update_el = soup.select_one(".Content .d-flex .fs-h3-title")
-    last_update = last_update_el.get_text(strip=True) if last_update_el else ""
-    print(f"LastUpdate: '{last_update}'")
+    # 2. Extract LastUpdate string (targeting second .fs-h3-title element)
+    last_update = ""
+    update_elements = soup.select(".fs-h3-title")
+    
+    if len(update_elements) >= 2:
+        last_update = update_elements[1].get_text(strip=True)
+    elif len(update_elements) == 1:
+        last_update = update_elements[0].get_text(strip=True)
 
-    # 3. File Update / Lock check
+    print(f"LastUpdate extracted: '{last_update}'")
+
+    # 3. File Update / Timestamp Comparison
     need_to_change = False
     existing_data = {}
 
@@ -79,9 +85,9 @@ async def scrape():
                 existing_data = json.load(f)
 
             if "lastUpdate" in existing_data:
-                print("Last update exist")
+                print("Last update exists in file.")
                 if existing_data["lastUpdate"] != last_update:
-                    print("Time changed, creating backup...")
+                    print("Time changed, backing up previous data...")
                     backup_filename = sanitize_backup_filename(existing_data["lastUpdate"])
                     backup_path = os.path.join(DATA_DIR, backup_filename)
                     
@@ -90,15 +96,15 @@ async def scrape():
                     
                     need_to_change = True
                 else:
-                    print("Time was not changed")
+                    print("Time was not changed. Skipping rewrite.")
             else:
-                print("Last update does not exist")
+                print("Last update does not exist.")
                 need_to_change = True
         except Exception as e:
-            print(f"Error reading existing file: {e}")
+            print(f"Error reading existing data file: {e}")
             need_to_change = True
     else:
-        print("Creates File")
+        print("Creating new data file...")
         need_to_change = True
 
     if not need_to_change:
@@ -121,11 +127,8 @@ async def scrape():
                 if val and val != "0":
                     general_is_empty = False
 
-    # 5. Parse Parties Table (table.xx)
+    # 5. Parse Parties Table into Array of Objects (table.xx)
     parties = []
-    parties_char = []
-    percent_parties = []
-    votes_parties = []
 
     table = soup.select_one("table.xx")
     if table:
@@ -139,34 +142,41 @@ async def scrape():
             party_char = tds[1].get_text(strip=True)
             percent = tds[2].get_text(strip=True)
             
-            votes_span = tds[3].select_one("span.text-start")
+            votes_span = tds[3].select_one("span.flex-fill")
             votes = votes_span.get_text(strip=True) if votes_span else tds[3].get_text(strip=True)
+            
+            # Remove formatting commas so JavaScript Number() parses cleanly
+            clean_votes = votes.replace(",", "").replace(" ", "")
 
-            parties.append(party_name)
-            parties_char.append(party_char)
-            percent_parties.append(percent)
-            votes_parties.append(votes)
+            # Object structure expected by core.js
+            parties.append({
+                "name": party_name,
+                "char": party_char,
+                "percent": percent,
+                "votes": clean_votes
+            })
 
-    print(f"general is empty? {general_is_empty}")
+    print(f"Is general summary empty? {general_is_empty}")
 
-    # 6. Save JSON Output (Exact Target Schema)
+    # 6. Save JSON Output with exact core.js schema
     if not general_is_empty:
+        # Extract accepted votes count for seat allocation calculations
+        accepted_votes_str = general.get("קולות כשרים עד עתה", "0").replace(",", "").replace(" ", "")
+
         output_data = {
             "url": URL,
             "lastUpdate": last_update,
+            "acceptedVotes": accepted_votes_str,
             "general": general,
-            "parties": parties,
-            "partiesChar": parties_char,
-            "precentParties": percent_parties,
-            "votesParties": votes_parties
+            "parties": parties
         }
 
         with open(JSON_PATH, "w", encoding="utf-8") as f:
             json.dump(output_data, f, ensure_ascii=False, indent=4)
 
-        print(f"Successfully saved to {JSON_PATH}")
+        print(f"Successfully updated {JSON_PATH} with {len(parties)} party entries.")
     else:
-        print("Didn't change since there is no data")
+        print("General data section was empty. Skipping JSON write.")
 
 if __name__ == "__main__":
     asyncio.run(scrape())
