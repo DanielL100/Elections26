@@ -36,19 +36,19 @@ const CONFIG = {
 
   // Registered parties for Election 26
   parties: [
-    { char: 'מחל',  key: 'L', name: 'הליכוד', color: '#1976D2', bloc: 'netanyahu' },
+    { char: 'ני',   key: 'N', name: 'נעם', color: '#7B1FA2', bloc: 'netanyahu' },
     { char: 'ב',    key: 'K', name: 'עוצמה יהודית', color: '#C2185B', bloc: 'netanyahu' },
-    { char: 'שס',   key: 'S', name: 'ש"ס', color: '#303F9F', bloc: 'netanyahu' },
-    { char: 'ג',    key: 'G', name: 'יהדות התורה', color: '#388E3C', bloc: 'netanyahu' },
     { char: 'ט',    key: 'Z', name: 'הציונות הדתית', color: '#D32F2F', bloc: 'netanyahu' },
     { char: 'ך',    key: 'V', name: 'עמך ישראל (עופר וינטר)', color: '#FF9800', bloc: 'netanyahu' },
-    { char: 'ני',   key: 'N', name: 'נעם', color: '#7B1FA2', bloc: 'netanyahu' },
+    { char: 'מחל',  key: 'L', name: 'הליכוד', color: '#1976D2', bloc: 'netanyahu' },
+    { char: 'שס',   key: 'S', name: 'ש"ס', color: '#303F9F', bloc: 'netanyahu' },
+    { char: 'ג',    key: 'G', name: 'יהדות התורה', color: '#388E3C', bloc: 'netanyahu' },
     
-    { char: 'דרך',  key: 'E', name: 'ישר! (איזנקוט)', color: '#00796B', bloc: 'eizenkot' },
     { char: 'רק',   key: 'B', name: 'ביחד (בנט)', color: '#F57C00', bloc: 'eizenkot' },
+    { char: 'דרך',  key: 'E', name: 'ישר! (איזנקוט)', color: '#00796B', bloc: 'eizenkot' },
+    { char: 'די',   key: 'M', name: 'המילואימניקים', color: '#FFEB3B', bloc: 'eizenkot' },
     { char: 'ל',    key: 'I', name: 'ישראל ביתנו', color: '#455A64', bloc: 'eizenkot' },
     { char: 'אמת',  key: 'D', name: 'הדמוקרטים', color: '#E53935', bloc: 'eizenkot' },
-    { char: 'די',   key: 'M', name: 'המילואימניקים', color: '#FFEB3B', bloc: 'eizenkot' },
     
     { char: 'עם',   key: 'R', name: 'רע"ם', color: '#8BC34A', bloc: 'arabs' },
     { char: 'ודם',  key: 'H', name: 'חד"ש-תע"ל / הרשימה המשותפת', color: '#9C27B0', bloc: 'arabs' },
