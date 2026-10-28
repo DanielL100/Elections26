@@ -1,15 +1,27 @@
 import asyncio
-import csv
+import json
+import os
 import re
 from bs4 import BeautifulSoup
 from playwright.async_api import async_playwright
 from playwright_stealth import stealth_async
 
-TARGET_URL = "https://votes26.bechirot.gov.il/"
+URL = "https://votes25.bechirot.gov.il/"
+DATA_DIR = "data"
+JSON_PATH = os.path.join(DATA_DIR, "data.json")
 
-async def scrape_election_data():
+def sanitize_filename(filename):
+    """Sanitizes timestamp string for valid OS filename creation."""
+    clean_str = filename.replace(":", ".").replace("/", ".")
+    if len(clean_str) > 16:
+        clean_str = clean_str[-16:]
+    return f"{clean_str}.json"
+
+async def scrape():
+    os.makedirs(DATA_DIR, exist_ok=True)
+    
     async with async_playwright() as p:
-        # Launch browser with arguments that help evade bot detection
+        # Launch Chromium with anti-bot detection flags
         browser = await p.chromium.launch(
             headless=True,
             args=[
@@ -20,7 +32,6 @@ async def scrape_election_data():
             ]
         )
         
-        # Configure context with real browser user-agent and desktop viewport
         context = await browser.new_context(
             user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
             viewport={"width": 1440, "height": 900},
@@ -28,70 +39,136 @@ async def scrape_election_data():
         )
         
         page = await context.new_page()
-        
-        # Apply stealth signatures
         await stealth_async(page)
 
-        print(f"Navigating to {TARGET_URL}...")
+        print(f"Navigating to {URL}...")
         try:
-            # Navigate and wait for DOM network idle to ensure WAF challenge passes
-            await page.goto(TARGET_URL, wait_until="networkidle", timeout=60000)
+            # Navigate and wait until network idle (allows Cloudflare JS challenge to complete)
+            await page.goto(URL, wait_until="networkidle", timeout=60000)
             
-            # Wait for table element to render
-            await page.wait_for_selector("table.xx", timeout=30000)
-            print("Page loaded successfully.")
-            
-            content = await page.content()
+            # Wait for content or table elements to ensure DOM is fully rendered
+            await page.wait_for_selector("table", timeout=30000)
+            html_content = await page.content()
         except Exception as e:
-            print(f"Error fetching page: {e}")
+            print(f"Failed to fetch page or pass challenge: {e}")
             await browser.close()
             return
-
+        
         await browser.close()
 
-    # Parse HTML using BeautifulSoup
-    soup = BeautifulSoup(content, 'html.parser')
+    soup = BeautifulSoup(html_content, 'html.parser')
+
+    # Extract LastUpdate text
+    last_update_el = soup.select_one(".LastUpdate")
+    last_update = last_update_el.get_text(strip=True) if last_update_el else ""
+
+    print(f"Extracted LastUpdate: '{last_update}'")
+
+    # Check existing data to evaluate if an update is needed (PHP logic conversion)
+    need_to_change = False
+    existing_json = {}
     
-    # 1. Extract Summary Metrics
-    summary_data = {}
-    boxes = soup.select(".icn-boxes-data .container-box")
-    for box in boxes:
-        label = box.select_one("div > div:first-child")
-        val = box.select_one("div.fw-bold")
-        if label and val:
-            summary_data[label.text.strip()] = val.text.strip()
-            
-    print("Summary Metrics extracted:", summary_data)
+    if os.path.exists(JSON_PATH):
+        try:
+            with open(JSON_PATH, "r", encoding="utf-8") as f:
+                existing_json = json.load(f)
+                
+            prev_last_update = existing_json.get("lastUpdate", "")
+            if prev_last_update:
+                print("Last update exists in file.")
+                if prev_last_update != last_update:
+                    print("Time changed, backing up old data...")
+                    
+                    # Create timestamped backup file
+                    if "סופיות" in prev_last_update:
+                        backup_filename = "סופיות.json"
+                    else:
+                        backup_filename = sanitize_filename(prev_last_update)
+                        
+                    backup_path = os.path.join(DATA_DIR, backup_filename)
+                    with open(backup_path, "w", encoding="utf-8") as bf:
+                        json.dump(existing_json, bf, ensure_ascii=False, indent=4)
+                        
+                    need_to_change = True
+                else:
+                    print("Time was not changed. Skipping rewrite.")
+            else:
+                need_to_change = True
+        except Exception as e:
+            print(f"Error reading existing JSON: {e}")
+            need_to_change = True
+    else:
+        print("Data file does not exist. Creating new file.")
+        need_to_change = True
 
-    # 2. Extract Party Results Table
-    results = []
-    rows = soup.select("table.xx tbody tr")
-    for row in rows:
-        cols = row.find_all("td")
-        if len(cols) >= 4:
-            party_name = cols[0].text.strip()
-            party_letters = cols[1].text.strip()
-            vote_pct = cols[2].text.strip()
-            
-            # Extract clean vote count from fourth column
-            vote_count_span = cols[3].select_one("span.flex-fill")
-            vote_count = vote_count_span.text.strip() if vote_count_span else cols[3].text.strip()
-            
-            results.append({
-                "party_name": party_name,
-                "letters": party_letters,
-                "percentage": vote_pct,
-                "votes": vote_count
-            })
+    if not need_to_change:
+        return
 
-    # Save to CSV
-    output_filename = "elections_results.csv"
-    with open(output_filename, mode="w", encoding="utf-8-sig", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=["party_name", "letters", "percentage", "votes"])
-        writer.writeheader()
-        writer.writerows(results)
+    # Parse Tables Logic
+    tables = soup.find_all("table")
+    if not tables:
+        print("No tables found on page.")
+        return
 
-    print(f"Successfully scraped {len(results)} party records to {output_filename}")
+    general = {}
+    parties = []
+    parties_char = []
+    percent_parties = []
+    votes_parties = []
+    general_is_empty = True
+
+    # Parse General Info Table (Table 0)
+    general_table_rows = tables[0].find_all("tr")
+    if len(general_table_rows) >= 2:
+        headers = [th.get_text(strip=True) for th in general_table_rows[0].find_all("th")]
+        cells = [td.get_text(strip=True) for td in general_table_rows[1].find_all("td")]
+        
+        for key, val in zip(headers, cells):
+            general[key] = val
+            if val != "" and val != "0":
+                general_is_empty = False
+
+    # Parse Parties Table (Table 1 or Table 2 depending on DOM variations)
+    parties_table_idx = 1 if len(tables) > 1 else 0
+    if len(tables) > 2 and len(tables[1].find_all("tr")) == 1:
+        parties_table_idx = 2
+
+    parties_table_rows = tables[parties_table_idx].find_all("tr")
+    for row in parties_table_rows:
+        th = row.find("th")
+        tds = row.find_all("td")
+        
+        if th and tds:
+            party_name = th.get_text(strip=True)
+            for idx, cell in enumerate(tds):
+                cell_text = cell.get_text(strip=True)
+                if idx == 0:
+                    parties.append(party_name)
+                    parties_char.append(cell_text)
+                elif idx == 1:
+                    percent_parties.append(cell_text)
+                elif idx == 2:
+                    div = cell.find("div")
+                    div_text = div.get_text(strip=True) if div else cell_text
+                    votes_parties.append(div_text)
+
+    if not general_is_empty:
+        output_data = {
+            "url": URL,
+            "lastUpdate": last_update,
+            "general": general,
+            "parties": parties,
+            "partiesChar": parties_char,
+            "precentParties": percent_parties,
+            "votesParties": votes_parties
+        }
+
+        # Write output to data/data.json formatted cleanly
+        with open(JSON_PATH, "w", encoding="utf-8") as f:
+            json.dump(output_data, f, ensure_ascii=False, indent=4)
+        print(f"Successfully updated {JSON_PATH}")
+    else:
+        print("General data table was empty. No changes written.")
 
 if __name__ == "__main__":
-    asyncio.run(scrape_election_data())
+    asyncio.run(scrape())
