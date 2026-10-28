@@ -14,7 +14,6 @@ def sanitize_backup_filename(last_update_str):
     if "סופיות" in last_update_str:
         return "סופיות.json"
     
-    # Replicates: substr(str_replace(":", ".", str_replace("/", ".", $data["lastUpdate"])), strlen($data["lastUpdate"]) - 16)
     clean_str = last_update_str.replace(":", ".").replace("/", ".")
     if len(clean_str) > 16:
         clean_str = clean_str[-16:]
@@ -23,7 +22,7 @@ def sanitize_backup_filename(last_update_str):
 async def scrape():
     os.makedirs(DATA_DIR, exist_ok=True)
 
-    # 1. Fetch Page with Playwright Stealth (Cloudflare / WAF Evasion)
+    # 1. Fetch Page with Playwright Stealth
     async with Stealth().use_async(async_playwright()) as p:
         browser = await p.chromium.launch(
             headless=True,
@@ -48,12 +47,13 @@ async def scrape():
             response = await page.goto(URL, wait_until="networkidle", timeout=60000)
             status_code = response.status if response else 0
             
-            if status_code != 200:
-                print(f"HTTP Status: {status_code}. Expected 200.")
+            if status_code not in [200, 202]:
+                print(f"HTTP Status: {status_code}. Expected 200 or 202.")
                 await browser.close()
                 return
 
-            await page.wait_for_selector("table", timeout=30000)
+            # Wait for either the info boxes container or parties table to render
+            await page.wait_for_selector(".icn-boxes-data, table", timeout=45000)
             html_content = await page.content()
         except Exception as e:
             print(f"Error loading page: {e}")
@@ -65,11 +65,11 @@ async def scrape():
     soup = BeautifulSoup(html_content, 'html.parser')
 
     # 2. Extract LastUpdate string
-    last_update_el = soup.select_one(".LastUpdate")
+    last_update_el = soup.select_one(".Content .d-flex .fs-h3-title")
     last_update = last_update_el.get_text(strip=True) if last_update_el else ""
     print(f"LastUpdate: '{last_update}'")
 
-    # 3. Check if JSON needs updating (PHP file lock & lastUpdate comparison logic)
+    # 3. File Update / Lock check
     need_to_change = False
     existing_data = {}
 
@@ -104,73 +104,52 @@ async def scrape():
     if not need_to_change:
         return
 
-    # 4. Parse Tables matching your PHP logic
-    tables = soup.find_all("table")
+    # 4. Parse General Summary Section (div.row.icn-boxes-data)
     general = {}
+    general_is_empty = True
+
+    general_container = soup.select_one("div.row.icn-boxes-data")
+    if general_container:
+        boxes = general_container.select(".container-box")
+        for box in boxes:
+            label_el = box.select_one(".info-box > div > div:nth-child(1)")
+            val_el = box.select_one(".info-box > div > .fs-2")
+            if label_el and val_el:
+                label = label_el.get_text(strip=True)
+                val = val_el.get_text(strip=True)
+                general[label] = val
+                if val and val != "0":
+                    general_is_empty = False
+
+    # 5. Parse Parties Table (table.xx)
     parties = []
     parties_char = []
     percent_parties = []
     votes_parties = []
-    general_is_empty = True
 
-    try:
-        t1_rows = tables[1].find_all("tr") if len(tables) > 1 else []
-        t1_th_count = len(t1_rows[0].find_all("th")) if t1_rows and t1_rows[0].find_all("th") else 0
-
-        if t1_th_count == 5:
-            print("Website - ENDED")
-            gen_table_idx = 0
-            parties_table_idx = 2 if len(t1_rows) == 1 else 1
-        else:
-            print("Website - STILL RUNNING")
-            gen_table_idx = 0
-            parties_table_idx = 1
-
-        # Extract General Summary Table
-        gen_rows = tables[gen_table_idx].find_all("tr")
-        if len(gen_rows) >= 2:
-            th_cells = gen_rows[0].find_all("th")
-            td_cells = gen_rows[1].find_all("td")
-            for idx, th in enumerate(th_cells):
-                header_name = th.get_text(strip=True)
-                val = td_cells[idx].get_text(strip=True) if idx < len(td_cells) else ""
-                general[header_name] = val
-                if val != "" and val != "0":
-                    general_is_empty = False
-
-        # Extract Parties Table
-        parties_rows = tables[parties_table_idx].find_all("tr")
-        for row in parties_rows:
+    table = soup.select_one("table.xx")
+    if table:
+        rows = table.select("tbody tr")
+        for row in rows:
             tds = row.find_all("td")
-            th = row.find("th")
-            if not tds or not th:
+            if len(tds) < 4:
                 continue
 
-            party_name = th.get_text(strip=True)
+            party_name = tds[0].get_text(strip=True)
+            party_char = tds[1].get_text(strip=True)
+            percent = tds[2].get_text(strip=True)
             
-            for key, cell in enumerate(tds):
-                cell_text = cell.get_text(strip=True)
-                if key == 0:
-                    parties.append(party_name)
-                    parties_char.append(cell_text)
-                elif key == 1 and t1_th_count != 5:
-                    percent_parties.append(cell_text)
-                elif key == 2:
-                    if t1_th_count == 5:
-                        percent_parties.append(cell_text)
-                    else:
-                        div = cell.find("div")
-                        votes_parties.append(div.get_text(strip=True) if div else cell_text)
-                elif key == 3 and t1_th_count == 5:
-                    div = cell.find("div")
-                    votes_parties.append(div.get_text(strip=True) if div else cell_text)
+            votes_span = tds[3].select_one("span.text-start")
+            votes = votes_span.get_text(strip=True) if votes_span else tds[3].get_text(strip=True)
 
-    except Exception as e:
-        print(f"NO DATA AVAILABLE: {e}")
+            parties.append(party_name)
+            parties_char.append(party_char)
+            percent_parties.append(percent)
+            votes_parties.append(votes)
 
     print(f"general is empty? {general_is_empty}")
 
-    # 5. Save JSON Output (Exact PHP Schema)
+    # 6. Save JSON Output (Exact Target Schema)
     if not general_is_empty:
         output_data = {
             "url": URL,
