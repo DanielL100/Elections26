@@ -135,6 +135,18 @@
 					</thead>
 					<thead class='thead-light'>
 						<tr id="general_info_data">
+							<!-- 1. Kosher Votes -->
+							<td id="general_accepted">-</td>
+							<!-- 2. Counted Percent Cell -->
+							<td id="counted_percent_val">-</td>
+							<!-- 3. Votes per Seat -->
+							<td id="general_vps">-</td>
+							<!-- 4. Trash Votes -->
+							<td id="general_trash">-</td>
+							<!-- 5. Leftover Seats -->
+							<td id="general_leftover">-</td>
+							<!-- 6. Legend -->
+							<td id="general_legend">-</td>
 						</tr>
 					</thead>
 				</table>
@@ -176,3 +188,28 @@
 		<script>
 		async function updateCountedPercent() {
 			try {
+				const data = await loadData();
+				if (!data || !data.general) return;
+
+				const clean = (val) => Number(String(val || 0).replace(/,/g, '').trim());
+
+				const kosher = clean(data.general['קולות כשרים עד עתה'] || data.acceptedVotes);
+				const cancelled = clean(data.general['קולות פסולים עד עתה']);
+				const totalVoters = clean(data.general['מספר בעלי זכות בחירה']);
+
+				if (totalVoters > 0) {
+					const countedPercent = (((kosher + cancelled) / totalVoters) * 100).toFixed(2) + '%';
+					const percentCell = document.getElementById('counted_percent_val');
+					if (percentCell) percentCell.textContent = countedPercent;
+				}
+			} catch (e) {
+				console.error("Failed to calculate counted percentage:", e);
+			}
+		}
+
+		$(document).ready(function() {
+			updateCountedPercent();
+		});
+		</script>
+	</body>
+</html>
