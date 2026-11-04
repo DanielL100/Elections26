@@ -81,7 +81,7 @@ function updateTexts(lastUpdate) {
   lastUpdate = lastUpdate || '';
   if (lastUpdate.includes('דמה')) return { kind: 'sim', text: 'תוצאות דמה' };
   if (lastUpdate.includes('סופיות')) return { kind: 'final', text: 'תוצאות סופיות' };
-  if (lastUpdate.includes('טרם') || !lastUpdate) return { kind: 'none', text: 'טרם נספרו קולות' };
+  if (lastUpdate.includes('טרם')) return { kind: 'none', text: 'טרם נספרו קולות' };
 
   return {
     kind: 'live',
