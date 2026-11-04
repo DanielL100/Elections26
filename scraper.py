@@ -1,11 +1,32 @@
 import asyncio
 import json
 import os
+import re
 from bs4 import BeautifulSoup
 from playwright.async_api import async_playwright
 from playwright_stealth import Stealth
 
-URL = "https://votes26.bechirot.gov.il/"
+CONFIG_PATH = "config.js"
+DEFAULT_URL = "https://votes26.bechirot.gov.il/"
+
+def get_url_from_config():
+    if os.path.exists(CONFIG_PATH):
+        try:
+            with open(CONFIG_PATH, "r", encoding="utf-8") as f:
+                content = f.read()
+                # Matches electionUrl: "..." or electionUrl: '...'
+                match = re.search(r'electionUrl\s*:\s*["\']([^"\']+)["\']', content)
+                if match:
+                    url = match.group(1).strip()
+                    print(f"Loaded URL from config.js: {url}")
+                    return url
+        except Exception as e:
+            print(f"Error reading config.js: {e}")
+    
+    print(f"Fallback to default URL: {DEFAULT_URL}")
+    return DEFAULT_URL
+
+URL = get_url_from_config()
 DATA_DIR = "data"
 JSON_PATH = os.path.join(DATA_DIR, "data.json")
 
