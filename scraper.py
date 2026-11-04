@@ -127,7 +127,7 @@ async def scrape():
                 if val and val != "0":
                     general_is_empty = False
 
-    # 5. Parse Parties Table into Array of Objects (table.xx)
+    # 5. Parse Parties Table (table.xx) with Dynamic Column Handling
     parties = []
 
     table = soup.select_one("table.xx")
@@ -140,15 +140,23 @@ async def scrape():
 
             party_name = tds[0].get_text(strip=True)
             party_char = tds[1].get_text(strip=True)
-            percent = tds[2].get_text(strip=True)
             
-            votes_span = tds[3].select_one("span.flex-fill")
-            votes = votes_span.get_text(strip=True) if votes_span else tds[3].get_text(strip=True)
+            # Dynamic Column Mapping:
+            # Final Results layout (5+ columns): Name | Char | Mandates | Percent | Votes
+            # Live/Counting layout (4 columns):  Name | Char | Percent  | Votes
+            if len(tds) >= 5:
+                percent = tds[3].get_text(strip=True)
+                votes_td = tds[4]
+            else:
+                percent = tds[2].get_text(strip=True)
+                votes_td = tds[3]
+
+            votes_span = votes_td.select_one("span.flex-fill, span.text-start")
+            votes = votes_span.get_text(strip=True) if votes_span else votes_td.get_text(strip=True)
             
-            # Remove formatting commas so JavaScript Number() parses cleanly
+            # Remove formatting commas/spaces so JavaScript Number() parses cleanly
             clean_votes = votes.replace(",", "").replace(" ", "")
 
-            # Object structure expected by core.js
             parties.append({
                 "name": party_name,
                 "char": party_char,
@@ -158,10 +166,15 @@ async def scrape():
 
     print(f"Is general summary empty? {general_is_empty}")
 
-    # 6. Save JSON Output with exact core.js schema
+    # 6. Save JSON Output with Fallbacks for acceptedVotes Extraction
     if not general_is_empty:
-        # Extract accepted votes count for seat allocation calculations
-        accepted_votes_str = general.get("קולות כשרים עד עתה", "0").replace(",", "").replace(" ", "")
+        # Check all potential label keys for kosher/accepted votes across dynamic site states
+        accepted_votes_str = (
+            general.get("קולות כשרים עד עתה") or 
+            general.get("קולות כשרים") or 
+            general.get("קולות כשרים בסך הכל") or 
+            "0"
+        ).replace(",", "").replace(" ", "")
 
         output_data = {
             "url": URL,
