@@ -172,7 +172,7 @@ async def scrape():
         accepted_votes_str = (
             general.get("קולות כשרים עד עתה") or 
             general.get("קולות כשרים") or 
-            general.get("קולות כשרים בסך הכל") or 
+            general.get("קולות כשרים - סופי") or 
             "0"
         ).replace(",", "").replace(" ", "")
 
