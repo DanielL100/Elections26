@@ -32,18 +32,37 @@ async function init() {
 function fillUpdateText(lastUpdate) {
   const u = updateTexts(lastUpdate);
   $id('updateTime').textContent = u.text;
-  if (u.kind === 'sim' || u.kind === 'none') $id('refToElecWeb').textContent = u.text;
-  else $id('lastUpdate').textContent = u.kind === 'final' ? 'נלקח' : u.text;
+  if (u.kind === 'sim' || u.kind === 'none') {
+    $id('refToElecWeb').textContent = u.text;
+  } else if (u.kind === 'final') {
+    $id('lastUpdate').textContent = ' סופיות נלקחו ';
+  } else {
+    $id('lastUpdate').textContent = ' ' + u.text + ' ';
+  }
 }
 
 function fillGeneralInfo(data) {
   const r = result;
   const cell = (label, value) => `<th><table class='table table-borderless moblie_general_info'><tr><td class='d-lg-none'>${label}</td><td>${value}</td></tr></table></th>`;
   const hasVotes = r.accepted > 0;
+  
+  let turnoutPercent = '0%';
+  if (hasVotes && data.general) {
+    const rawVotes = data.general["קולות עד עתה"] || data.general["קולות כשרים עד עתה"] || data.acceptedVotes || "0";
+    const rawVoters = data.general["מספר בעלי זכות בחירה"] || "0";
+    
+    const votesNum = parseInt(String(rawVotes).replace(/,/g, ''), 10) || 0;
+    const votersNum = parseInt(String(rawVoters).replace(/,/g, ''), 10) || 0;
+    
+    if (votersNum > 0) {
+      turnoutPercent = fmt(((votesNum / votersNum) * 100).toFixed(2)) + '%';
+    }
+  }
+
   let h = '';
   h += cell('קולות כשרים', hasVotes ? fmt(r.accepted) : '0');
   h += cell('קולות למנדט', hasVotes ? fmt(r.votesPerSeat.toFixed(2)) : '0');
-  h += cell('שיעור ההצבעה שנספר ' + INFO_ICON('אחוז הקולות שנספרו (כשרים + פסולים) מתוך בעלי זכות הצבעה'), hasVotes ? fmt(((parseInt(data["general"]["קולות עד עתה"].replaceAll(",", ""))/parseInt(data["general"]["מספר בעלי זכות בחירה"].replaceAll(",", ""))) * 100).toFixed(2)) + '%' : '0%');
+  h += cell('שיעור ההצבעה שנספר ' + INFO_ICON('אחוז הקולות שנספרו (כשרים + פסולים) מתוך בעלי זכות הצבעה'), turnoutPercent);
   h += cell('קולות מבוזבזים ' + INFO_ICON('סך הקולות של מפלגות שלא עברו את אחוז החסימה'), fmt(r.trashVotes));
   h += cell('מנדטים עודפים ' + INFO_ICON('מספר המנדטים שנותרו לחלק בין המפלגות שעברו את אחוז החסימה'), r.leftover);
   const tip = 'האם המפלגה הרוויחה מנדט נוסף מהסכם עודפים עם המפלגה המצויינת למטה או מחוק בדר-עופר';
@@ -86,7 +105,7 @@ function getTableHeader() {
   if (theads[2]) document.documentElement.style.scrollPaddingTop = theads[2].offsetHeight + 'px';
 }
 
-/* ----- share / embed overlay (called from inline onclick in index.html) ----- */
+/* ----- share / embed overlay ----- */
 
 const pageBase = () => location.href.split('#')[0].replace(/[^/]*$/, '');
 
