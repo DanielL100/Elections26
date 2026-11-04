@@ -171,8 +171,13 @@ async def scrape():
         # Check all potential label keys for kosher/accepted votes across dynamic site states
         accepted_votes_str = (
             general.get("קולות כשרים עד עתה") or 
-            general.get("קולות כשרים") or 
             general.get("קולות כשרים - סופי") or 
+            "0"
+        ).replace(",", "").replace(" ", "")
+
+        all_votes = (
+            general.get("קולות עד עתה") or
+            general.get("מספר מצביעים - סופי") or
             "0"
         ).replace(",", "").replace(" ", "")
 
@@ -180,6 +185,7 @@ async def scrape():
             "url": URL,
             "lastUpdate": last_update,
             "acceptedVotes": accepted_votes_str,
+            "allVotes": all_votes,
             "general": general,
             "parties": parties
         }
