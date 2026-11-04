@@ -22,6 +22,7 @@ function calculate(data) {
   const total = CONFIG.totalSeats;
   const accepted = Number(data.acceptedVotes) || 0;
   const allVotes = Number(data.allVotes) || 0;
+  const canVote = Number(data.canVote) || 0;
   const threshold = (accepted * CONFIG.thresholdPercent) / 100;
   const votesPerSeat = accepted / total;
 
@@ -72,7 +73,7 @@ function calculate(data) {
 
   passed.sort((x, y) => y.seats - x.seats); // stable: ties keep the site's vote order
   const trashVotes = failed.reduce((s, p) => s + p.votes, 0);
-  return { accepted, allVotes, threshold, votesPerSeat, trashVotes, leftover: initialLeftover, passed, failed, parties: [...passed, ...failed] };
+  return { accepted, allVotes, canVote, threshold, votesPerSeat, trashVotes, leftover: initialLeftover, passed, failed, parties: [...passed, ...failed] };
 }
 
 const blocOf = (p) => (p.cfg ? p.cfg.bloc : CONFIG.defaultBloc);
