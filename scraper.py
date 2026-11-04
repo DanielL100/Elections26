@@ -202,11 +202,17 @@ async def scrape():
             "0"
         ).replace(",", "").replace(" ", "")
 
+        canVote = (
+            general.get("מספר בעלי זכות בחירה") or
+            "0"
+        ).replace(",", "").replace(" ", "")
+
         output_data = {
             "url": URL,
             "lastUpdate": last_update,
             "acceptedVotes": accepted_votes_str,
             "allVotes": all_votes,
+            "canVote": canVote,
             "general": general,
             "parties": parties
         }
