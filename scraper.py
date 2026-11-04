@@ -7,7 +7,7 @@ from playwright.async_api import async_playwright
 from playwright_stealth import Stealth
 
 CONFIG_PATH = "config.js"
-DEFAULT_URL = "https://votes26.bechirot.gov.il/"
+DEFAULT_URL = "https://votes25.bechirot.gov.il/"
 
 def get_url_from_config():
     if os.path.exists(CONFIG_PATH):
