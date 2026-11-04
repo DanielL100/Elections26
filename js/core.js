@@ -83,18 +83,9 @@ function updateTexts(lastUpdate) {
   if (lastUpdate.includes('סופיות')) return { kind: 'final', text: 'תוצאות סופיות' };
   if (lastUpdate.includes('טרם') || !lastUpdate) return { kind: 'none', text: 'טרם נספרו קולות' };
 
-  if (lastUpdate.length >= 16) {
-    const datePart = lastUpdate.substr(lastUpdate.length - 16, 10);
-    const timePart = lastUpdate.substr(lastUpdate.length - 5, 5);
-    return {
-      kind: 'live',
-      text: 'עודכן לאחרונה בתאריך ' + datePart + ' בשעה ' + timePart,
-    };
-  }
-
   return {
     kind: 'live',
-    text: lastUpdate,
+    text: 'עודכן לאחרונה בתאריך ' + lastUpdate.substr(lastUpdate.length - 16, 10) + ' בשעה ' + lastUpdate.substr(lastUpdate.length - 5, 5),
   };
 }
 
