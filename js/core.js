@@ -1,5 +1,6 @@
 /* Shared by index.html, stats.html and embed.html. Nothing election-specific lives here - see config.js */
 
+
 const $id = (id) => document.getElementById(id);
 const fmt = (n) => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
