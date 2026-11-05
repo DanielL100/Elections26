@@ -100,11 +100,12 @@ async function init() {
   const seatEq = (v) => v / r.votesPerSeat;
   const trashSeats = seatEq(r.trashVotes);
   const seatTip = tooltip((c) => c[0].label, (c) => c.raw.toFixed(2) + ' מנדטים');
+  const votesTip = tooltip((c) => c[0].label, (c) => c.raw.toFixed(2) + '%');
 
   new Chart($id('wasted-votes'), {
     type: 'pie',
     data: { labels: ['קולות מבוזבזים', 'שאר הקולות'], datasets: [{ data: [r.trashVotes / r.accepted * 100, 100 - (r.trashVotes / r.accepted * 100)], backgroundColor: ['rgb(255, 99, 132)', 'rgb(54, 162, 235)'], hoverOffset: 4 }] },
-    options: { responsive: true, maintainAspectRatio: false, plugins: { tooltip: seatTip, legend: { position: 'right', rtl: true, onClick: noop } } },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { tooltip: votesTip, legend: { position: 'right', rtl: true, onClick: noop } } },
   });
 
   const next = r.failed.slice(0, 3);
@@ -146,7 +147,7 @@ async function init() {
       data: { 
         labels: next.map((p) => p.name), 
         datasets: [{ 
-          data: next.map((p) => p.percent), 
+          data: next.map((p) => parseFloat(p.percent.replace("%", ""))), 
           backgroundColor: ['#42A5F5', '#66BB6A', '#FFA726'], 
           hoverOffset: 4 
         }] 
