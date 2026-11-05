@@ -650,3 +650,11 @@ h2 {
   display: inline-block !important;
   opacity: 0.6;
 }
+
+/* Keep divider and timestamp hidden on small screens (< 992px) */
+@media (max-width: 991.98px) {
+  #navbar-divider,
+  #updateTime {
+    display: none !important;
+  }
+}
