@@ -31,7 +31,7 @@ const MasterLayout = {
     renderFooter: function (isSticky = false) {
         return `
         <footer class="page-footer ${isSticky ? 'mt-auto' : ''}">
-            <div class="footer-copyright text-center pb-3">© 2022 כל הזכויות שמורות | 
+            <div class="footer-copyright text-center pb-3">© 2026 כל הזכויות שמורות | 
                 <a href="terms.html">תנאי שימוש</a> | 
                 האתר אינו קשור ל<a id="electionsUrl2" target="_blank">אתר ועדת הבחירות</a>
             </div>
