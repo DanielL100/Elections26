@@ -31,7 +31,7 @@ const MasterLayout = {
                 <span id="navbar-divider" class="text-white-50 mx-2" style="display: inline-block;">|</span>
             
                 <!-- זמן עדכון אחרון -->
-                <span id="updateTime" class="navbar-text lead text-success mb-0"></span>
+                <span id="updateTime" class="navbar-text lead mb-0"></span>
             </div>
         </nav>`;
     },
