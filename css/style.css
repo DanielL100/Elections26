@@ -581,3 +581,59 @@ h2 {
 #updateTime {
     color: #32ff7e
 }
+
+
+
+
+/* darkmode */
+
+/* Light mode defaults */
+:root {
+  --bg-primary: #ffffff;
+  --bg-card: #f8f9fa;
+  --text-main: #212529;
+  --border-color: #dee2e6;
+  --table-head-bg: #e9ecef;
+}
+
+/* Dark mode overrides */
+[data-theme="dark"] {
+  --bg-primary: #121212;
+  --bg-card: #1e1e1e;
+  --text-main: #e0e0e0;
+  --border-color: #333333;
+  --table-head-bg: #2a2a2a;
+}
+
+/* Apply variables to base elements & Bootstrap components */
+[data-theme="dark"] body {
+  background-color: var(--bg-primary);
+  color: var(--text-main);
+}
+
+[data-theme="dark"] .table {
+  color: var(--text-main);
+  background-color: var(--bg-card);
+  border-color: var(--border-color);
+}
+
+[data-theme="dark"] .table .thead-light th {
+  background-color: var(--table-head-bg);
+  color: var(--text-main);
+  border-color: var(--border-color);
+}
+
+[data-theme="dark"] .navbar-dark.bg-primary {
+  background-color: #0f2b48 !important;
+}
+
+[data-theme="dark"] .flip-box-front, 
+[data-theme="dark"] .flip-box-back {
+  background-color: var(--bg-card);
+  color: var(--text-main);
+}
+
+
+
+
+
