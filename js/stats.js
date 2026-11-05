@@ -144,13 +144,13 @@ async function init() {
         // 2. Draw the red threshold value label on the Y-axis
         ctx.restore();
         ctx.save();
-        ctx.font = 'bold 12px Alef, Arial, sans-serif';
+        //ctx.font = 'bold 12px Alef, Arial, sans-serif';
         ctx.fillStyle = '#FF0000';
         ctx.textAlign = 'right';
         ctx.textBaseline = 'middle';
         
         // Position text slightly to the left of the Y-axis baseline
-        ctx.fillText(thresholdVal + '%', left - 6, yPixel);
+        ctx.fillText(thresholdVal, left - 6, yPixel);
         
         ctx.restore();
       }
