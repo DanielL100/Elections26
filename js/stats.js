@@ -126,18 +126,32 @@ async function init() {
       afterDraw(chart) {
         const { ctx, chartArea: { left, right }, scales: { y } } = chart;
         
-        // Pull threshold percentage dynamically from CONFIG (or fallback to 3.25)
+        // Pull threshold percentage dynamically from CONFIG (or default to 3.25)
         const thresholdVal = (typeof CONFIG !== 'undefined' && CONFIG.thresholdPercent) ? CONFIG.thresholdPercent : 3.25;
         const yPixel = y.getPixelForValue(thresholdVal);
     
         ctx.save();
+        
+        // 1. Draw the horizontal red dashed threshold line
         ctx.beginPath();
         ctx.moveTo(left, yPixel);
         ctx.lineTo(right, yPixel);
         ctx.lineWidth = 2;
-        ctx.strokeStyle = '#FF0000'; // Red color
-        ctx.setLineDash([5, 5]);      // Dashed line (remove line to make solid)
+        ctx.strokeStyle = '#FF0000';
+        ctx.setLineDash([5, 5]);
         ctx.stroke();
+    
+        // 2. Draw the red threshold value label on the Y-axis
+        ctx.restore();
+        ctx.save();
+        ctx.font = 'bold 12px Alef, Arial, sans-serif';
+        ctx.fillStyle = '#FF0000';
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'middle';
+        
+        // Position text slightly to the left of the Y-axis baseline
+        ctx.fillText(thresholdVal + '%', left - 6, yPixel);
+        
         ctx.restore();
       }
     };
@@ -156,7 +170,7 @@ async function init() {
         responsive: true, 
         maintainAspectRatio: false,
         plugins: { 
-          tooltip: seatTip, 
+          tooltip: votesTip, 
           legend: { display: false } 
         },
         scales: {
