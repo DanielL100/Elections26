@@ -150,7 +150,7 @@ async function init() {
         ctx.textBaseline = 'middle';
         
         // Position text slightly to the left of the Y-axis baseline
-        ctx.fillText(thresholdVal, left - 6, yPixel);
+        ctx.fillText(thresholdVal + "%", left - 6, yPixel);
         
         ctx.restore();
       }
@@ -174,7 +174,14 @@ async function init() {
           legend: { display: false } 
         },
         scales: {
-          y: { max: 4 },
+          y: {
+            max: 4,
+            ticks: {
+              callback(value) {
+                return value + '%';
+              }
+            }
+             },
           x: { 
             ticks: { 
               callback(val) { 
