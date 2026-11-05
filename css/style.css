@@ -209,7 +209,7 @@ input[type=range]:hover::-webkit-slider-thumb {
 
 .row {
     margin: auto;
-    margin-top: 50px;
+    margin-top: 50px !important;
 }
 
 #infoUser {
