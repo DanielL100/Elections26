@@ -21,12 +21,18 @@ const MasterLayout = {
                     </li>
                 </ul>
             </div>
-            <button class="btn btn-outline-light nav-link border-0" onclick="toggleDarkMode()" aria-label="Toggle Dark Mode">
-                <i class="bi bi-moon-stars-fill"></i>
-            </button>
-            <span class="navbar-text d-none d-lg-block">
-                <p id="updateTime" class="lead"></p>
-            </span>
+            <div class="d-flex align-items-center ml-auto me-auto">
+                <!-- Dark Mode Toggle -->
+                <button class="btn btn-outline-light border-0 py-1 px-2 me-2" onclick="toggleDarkMode()" aria-label="Toggle Dark Mode">
+                    <i class="bi bi-moon-stars-fill"></i>
+                </button>
+                
+                <!-- Divider -->
+                <span class="text-white-50 mx-2">|</span>
+            
+                <!-- Last Update Time -->
+                <span id="updateTime" class="navbar-text text-white-50 small mb-0"></span>
+            </div>
         </nav>`;
     },
 
