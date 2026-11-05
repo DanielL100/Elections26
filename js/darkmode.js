@@ -29,22 +29,21 @@ function toggleDarkMode() {
 function updateDarkModeUI() {
   const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
   
-  // עדכון האייקון (שמש במצב כהה, ירח במצב בהיר)
-  const iconEl = document.querySelector('#btn-darkmode-toggle i');
-  if (iconEl) {
-    iconEl.className = isDark ? 'bi bi-sun-fill' : 'bi bi-moon-stars-fill';
-  }
+  // Update icons on both desktop and mobile buttons
+  const icons = document.querySelectorAll('#btn-darkmode-toggle i, #btn-darkmode-toggle-mobile i');
+  icons.forEach(icon => {
+    icon.className = isDark ? 'bi bi-sun-fill' : 'bi bi-moon-stars-fill';
+  });
 
-  // טיפול בקו ההפרדה ובזמן עדכון
   const updateTimeEl = document.getElementById('updateTime');
   const dividerEl = document.getElementById('navbar-divider');
 
-  if (updateTimeEl && updateTimeEl.innerText.trim() !== '') {
-    // בעמוד שבו יש זמן עדכון (כמו index.html) - מציגים את הקו הישר והטקסט הירוק
-    if (dividerEl) dividerEl.style.display = 'inline-block';
-  } else {
-    // בעמודים שאין בהם זמן עדכון - משאירים רק את הכפתור ומסתירים את הקו
-    if (dividerEl) dividerEl.style.display = 'none';
+  if (dividerEl) {
+    if (updateTimeEl && updateTimeEl.innerText.trim() !== '') {
+      dividerEl.style.display = 'inline-block';
+    } else {
+      dividerEl.style.display = 'none';
+    }
   }
 }
 

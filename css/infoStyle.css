@@ -36,3 +36,93 @@ h2 {
     margin-top: 10px;
     border-bottom:1px solid #DDD;
 }
+
+
+
+/* darkmode */
+
+/* Dark Mode Palette Overrides */
+[data-theme="dark"] {
+  --bg-dark: #121212;
+  --bg-card: #1e1e1e;
+  --text-light: #e0e0e0;
+  --border-dark: #333333;
+}
+
+[data-theme="dark"] body {
+  background-color: var(--bg-dark) !important;
+  color: var(--text-light) !important;
+}
+
+/* 1. תיקון צבע רקע לעמודות וסגנונות table-secondary */
+[data-theme="dark"] .table,
+[data-theme="dark"] .table > tbody > tr > td,
+[data-theme="dark"] .table > tbody > tr > th,
+[data-theme="dark"] .table > thead > tr > th,
+[data-theme="dark"] .table-secondary,
+[data-theme="dark"] .table-secondary > td,
+[data-theme="dark"] .table-secondary > th {
+  background-color: var(--bg-card) !important;
+  color: var(--text-light) !important;
+  border-color: var(--border-dark) !important;
+}
+
+/* 2. תיקון גובה שורות אחיד וצבע טקסט מנוגדות בתאי מפלגות */
+[data-theme="dark"] table.xx tbody tr td {
+  vertical-align: middle !important;
+}
+
+[data-theme="dark"] .flip-box-front, 
+[data-theme="dark"] .flip-box-back,
+[data-theme="dark"] .card,
+[data-theme="dark"] .container-box {
+  color: var(--text-light) !important;
+  border-color: var(--border-dark) !important;
+}
+
+[data-theme="dark"] h4.mx-auto {
+  color: black !important;
+}
+
+/* הפיכת טקסטים כהים בטבלאות לטקסט בהיר וקריא */
+[data-theme="dark"] .text-dark,
+[data-theme="dark"] .color_explain,
+[data-theme="dark"] .parties_excesses {
+  color: var(--text-light) !important;
+}
+
+/* תיקון טקסט שמות המפלגות מתחת לסרגל המנדטים הדינמי */
+[data-theme="dark"] .parties-names {
+  color: #e0e0e0 !important;
+}
+
+/* תיקון כפתורי השיתוף וההטמעה בתחתית הסרגל */
+[data-theme="dark"] .btn-custom-embed,
+[data-theme="dark"] .btn-custom-share {
+  background-color: #2b3035 !important;
+  color: #ffffff !important;
+  border-color: #495057 !important;
+}
+
+#navbar-divider {
+  display: inline-block !important;
+  opacity: 0.6;
+}
+
+.navbar-nav {
+    padding-right: 0 !important;
+  }
+
+/* Keep divider and timestamp hidden on small screens (< 992px) */
+/* Integrate collapse links into top row on desktop screens */
+@media (min-width: 992px) {
+  .navbar-expand-lg {
+    flex-wrap: nowrap !important;
+  }
+  .navbar-expand-lg .navbar-collapse {
+    width: auto !important;
+    margin-right: 1.5rem !important; /* Spacing between logo and links on PC */
+  }
+}
+
+
