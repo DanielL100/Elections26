@@ -21,16 +21,16 @@ const MasterLayout = {
                     </li>
                 </ul>
             </div>
-            <div class="d-flex align-items-center me-auto ml-auto">
-                <!-- כפתור מצב כהה עם אייקון משתנה -->
+            <div class="d-flex align-items-center ms-auto ml-auto">
+                <!-- כפתור מצב כהה (קיים בכל העמודים) -->
                 <button id="btn-darkmode-toggle" class="btn btn-outline-light border-0 py-1 px-2" onclick="toggleDarkMode()" aria-label="Toggle Dark Mode">
                     <i class="bi bi-moon-stars-fill"></i>
                 </button>
                 
-                <!-- קו הפרדה דינמי - יופיע רק כשיש עדכון זמן בעמוד -->
-                <span id="navbar-divider" class="text-white-50 mx-2" style="display: none;">|</span>
+                <!-- קו הפרדה (יופיע קבוע כשיש זמן עדכון) -->
+                <span id="navbar-divider" class="text-white-50 mx-2" style="display: inline-block;">|</span>
             
-                <!-- זמן עדכון אחרון בצבע ירוק מקורי -->
+                <!-- זמן עדכון אחרון -->
                 <span id="updateTime" class="navbar-text lead text-success mb-0"></span>
             </div>
         </nav>`;
