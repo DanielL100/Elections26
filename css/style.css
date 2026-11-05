@@ -622,7 +622,6 @@ h2 {
 [data-theme="dark"] .flip-box-back,
 [data-theme="dark"] .card,
 [data-theme="dark"] .container-box {
-  background-color: var(--bg-card) !important;
   color: var(--text-light) !important;
   border-color: var(--border-dark) !important;
 }
@@ -635,19 +634,8 @@ h2 {
 }
 
 /* תיקון טקסט שמות המפלגות מתחת לסרגל המנדטים הדינמי */
-[data-theme="dark"] .party_name_under,
-[data-theme="dark"] .parties_under,
-[data-theme="dark"] .parties_under span,
-[data-theme="dark"] #coalition_block,
-[data-theme="dark"] #oposition_block,
-[data-theme="dark"] .drag_explain {
+[data-theme="dark"] .parties-names {
   color: #e0e0e0 !important;
-}
-
-/* תיקון צבע הטקסט של סימון הבלוקים והמנדטים של הקואליציה/אופוזיציה */
-[data-theme="dark"] #block_61_val,
-[data-theme="dark"] #slider_val {
-  color: #ffffff !important;
 }
 
 /* תיקון כפתורי השיתוף וההטמעה בתחתית הסרגל */
