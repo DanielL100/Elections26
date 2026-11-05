@@ -21,6 +21,9 @@ const MasterLayout = {
                     </li>
                 </ul>
             </div>
+            <button class="btn btn-outline-light nav-link border-0" onclick="toggleDarkMode()" aria-label="Toggle Dark Mode">
+                <i class="bi bi-moon-stars-fill"></i>
+            </button>
             <span class="navbar-text d-none d-lg-block">
                 <p id="updateTime" class="lead"></p>
             </span>
