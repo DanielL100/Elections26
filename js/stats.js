@@ -9,6 +9,11 @@ const datalabels = (formatter) => ({ display: true, align: 'center', textAlign: 
 const centerText = (text, withLegend) => ({
   beforeDraw(chart) {
     const { width, height, ctx } = chart; ctx.restore();
+    
+    // Set text color based on dark mode theme
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    ctx.fillStyle = isDark ? '#ffffff' : '#212529';
+
     ctx.font = (height / 125).toFixed(2) + 'rem Alef'; ctx.textBaseline = 'middle';
     const narrow = window.innerWidth < 992, w = ctx.measureText(text).width;
     let x, y = height / 2;
