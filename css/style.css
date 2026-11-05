@@ -587,53 +587,52 @@ h2 {
 
 /* darkmode */
 
-/* Light mode defaults */
-:root {
-  --bg-primary: #ffffff;
-  --bg-card: #f8f9fa;
-  --text-main: #212529;
-  --border-color: #dee2e6;
-  --table-head-bg: #e9ecef;
-}
-
-/* Dark mode overrides */
+/* Dark Mode Palette Overrides */
 [data-theme="dark"] {
-  --bg-primary: #121212;
+  --bg-dark: #121212;
   --bg-card: #1e1e1e;
-  --text-main: #e0e0e0;
-  --border-color: #333333;
-  --table-head-bg: #2a2a2a;
+  --text-light: #e0e0e0;
+  --border-dark: #333333;
 }
 
-/* Apply variables to base elements & Bootstrap components */
 [data-theme="dark"] body {
-  background-color: var(--bg-primary);
-  color: var(--text-main);
+  background-color: var(--bg-dark) !important;
+  color: var(--text-light) !important;
 }
 
-[data-theme="dark"] .table {
-  color: var(--text-main);
-  background-color: var(--bg-card);
-  border-color: var(--border-color);
+/* 1. תיקון צבע רקע לעמודות וסגנונות table-secondary */
+[data-theme="dark"] .table,
+[data-theme="dark"] .table > tbody > tr > td,
+[data-theme="dark"] .table > tbody > tr > th,
+[data-theme="dark"] .table > thead > tr > th,
+[data-theme="dark"] .table-secondary,
+[data-theme="dark"] .table-secondary > td,
+[data-theme="dark"] .table-secondary > th {
+  background-color: var(--bg-card) !important;
+  color: var(--text-light) !important;
+  border-color: var(--border-dark) !important;
 }
 
-[data-theme="dark"] .table .thead-light th {
-  background-color: var(--table-head-bg);
-  color: var(--text-main);
-  border-color: var(--border-color);
-}
-
-[data-theme="dark"] .navbar-dark.bg-primary {
-  background-color: #0f2b48 !important;
+/* 2. תיקון גובה שורות אחיד וצבע טקסט מנוגדות בתאי מפלגות */
+[data-theme="dark"] table.xx tbody tr td {
+  vertical-align: middle !important;
 }
 
 [data-theme="dark"] .flip-box-front, 
-[data-theme="dark"] .flip-box-back {
-  background-color: var(--bg-card);
-  color: var(--text-main);
+[data-theme="dark"] .flip-box-back,
+[data-theme="dark"] .card,
+[data-theme="dark"] .container-box {
+  background-color: var(--bg-card) !important;
+  color: var(--text-light) !important;
+  border-color: var(--border-dark) !important;
 }
 
-
+/* הפיכת טקסטים כהים בטבלאות לטקסט בהיר וקריא */
+[data-theme="dark"] .text-dark,
+[data-theme="dark"] .color_explain,
+[data-theme="dark"] .parties_excesses {
+  color: var(--text-light) !important;
+}
 
 
 
