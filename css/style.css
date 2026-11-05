@@ -634,5 +634,28 @@ h2 {
   color: var(--text-light) !important;
 }
 
+/* תיקון טקסט שמות המפלגות מתחת לסרגל המנדטים הדינמי */
+[data-theme="dark"] .party_name_under,
+[data-theme="dark"] .parties_under,
+[data-theme="dark"] .parties_under span,
+[data-theme="dark"] #coalition_block,
+[data-theme="dark"] #oposition_block,
+[data-theme="dark"] .drag_explain {
+  color: #e0e0e0 !important;
+}
+
+/* תיקון צבע הטקסט של סימון הבלוקים והמנדטים של הקואליציה/אופוזיציה */
+[data-theme="dark"] #block_61_val,
+[data-theme="dark"] #slider_val {
+  color: #ffffff !important;
+}
+
+/* תיקון כפתורי השיתוף וההטמעה בתחתית הסרגל */
+[data-theme="dark"] .btn-custom-embed,
+[data-theme="dark"] .btn-custom-share {
+  background-color: #2b3035 !important;
+  color: #ffffff !important;
+  border-color: #495057 !important;
+}
 
 
