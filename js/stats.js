@@ -104,7 +104,7 @@ async function init() {
 
   new Chart($id('wasted-votes'), {
     type: 'pie',
-    data: { labels: ['קולות מבוזבזים', 'שאר הקולות'], datasets: [{ data: [r.trashVotes / r.accepted * 100, 100 - (r.trashVotes / r.accepted * 100)], backgroundColor: ['rgb(255, 99, 132)', 'rgb(54, 162, 235)'], hoverOffset: 4 }] },
+    data: { labels: ['קולות כשרים מבוזבזים', 'שאר הקולות הכשרים'], datasets: [{ data: [r.trashVotes / r.accepted * 100, 100 - (r.trashVotes / r.accepted * 100)], backgroundColor: ['rgb(255, 99, 132)', 'rgb(54, 162, 235)'], hoverOffset: 4 }] },
     options: { responsive: true, maintainAspectRatio: false, plugins: { tooltip: votesTip, legend: { position: 'right', rtl: true, onClick: noop } } },
   });
 
