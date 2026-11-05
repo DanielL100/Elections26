@@ -34,7 +34,7 @@ const MasterLayout = {
 
                 <!-- פקדים בצד שמאל ב-PC בלבד (דחופים לשמאל באמצעות me-auto/mr-auto) -->
                 <div class="d-none d-lg-flex align-items-center me-auto mr-auto">
-                    <span id="updateTime" class="navbar-text lead mb-0"></span>
+                    <span id="updateTime" class="lead mb-0"></span>
                     <span id="navbar-divider" class="text-white-50 mx-2" style="display: inline-block;">|</span>
                     <button id="btn-darkmode-toggle" class="btn btn-outline-light border-0 py-1 px-2" onclick="toggleDarkMode()" aria-label="Toggle Dark Mode">
                         <i class="bi bi-moon-stars-fill"></i>
