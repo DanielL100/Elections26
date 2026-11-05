@@ -103,7 +103,7 @@ async function init() {
 
   new Chart($id('wasted-votes'), {
     type: 'pie',
-    data: { labels: ['קולות מבוזבזים', 'שאר הקולות'], datasets: [{ data: [r.trashVotes, r.accepted - r.trashVotes], backgroundColor: ['rgb(255, 99, 132)', 'rgb(54, 162, 235)'], hoverOffset: 4 }] },
+    data: { labels: ['קולות מבוזבזים', 'שאר הקולות'], datasets: [{ data: [r.trashVotes / r.accepted * 100, 100 - (r.trashVotes / r.accepted * 100)], backgroundColor: ['rgb(255, 99, 132)', 'rgb(54, 162, 235)'], hoverOffset: 4 }] },
     options: { responsive: true, maintainAspectRatio: false, plugins: { tooltip: seatTip, legend: { position: 'right', rtl: true, onClick: noop } } },
   });
 
@@ -120,17 +120,57 @@ async function init() {
       options: { responsive: true, maintainAspectRatio: false, plugins: { tooltip: seatTip, legend: { position: 'left', rtl: true, onClick: noop } } },
     });
 
+    const thresholdLinePlugin = {
+      id: 'thresholdLine',
+      afterDraw(chart) {
+        const { ctx, chartArea: { left, right }, scales: { y } } = chart;
+        
+        // Pull threshold percentage dynamically from CONFIG (or fallback to 3.25)
+        const thresholdVal = (typeof CONFIG !== 'undefined' && CONFIG.thresholdPercent) ? CONFIG.thresholdPercent : 3.25;
+        const yPixel = y.getPixelForValue(thresholdVal);
+    
+        ctx.save();
+        ctx.beginPath();
+        ctx.moveTo(left, yPixel);
+        ctx.lineTo(right, yPixel);
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = '#FF0000'; // Red color
+        ctx.setLineDash([5, 5]);      // Dashed line (remove line to make solid)
+        ctx.stroke();
+        ctx.restore();
+      }
+    };
+    
     new Chart($id('almost-enter'), {
       type: 'bar',
-      data: { labels: next.map((p) => p.name), datasets: [{ data: next.map((p) => p.precent), backgroundColor: ['#42A5F5', '#66BB6A', '#FFA726'], hoverOffset: 4 }] },
+      data: { 
+        labels: next.map((p) => p.name), 
+        datasets: [{ 
+          data: next.map((p) => p.percent), 
+          backgroundColor: ['#42A5F5', '#66BB6A', '#FFA726'], 
+          hoverOffset: 4 
+        }] 
+      },
       options: {
-        responsive: true, maintainAspectRatio: false,
-        plugins: { tooltip: seatTip, legend: { display: false } },
+        responsive: true, 
+        maintainAspectRatio: false,
+        plugins: { 
+          tooltip: seatTip, 
+          legend: { display: false } 
+        },
         scales: {
           y: { max: 4 },
-          x: { ticks: { callback(val) { const l = this.getLabelForValue(val); return l.length > 13 && window.innerWidth < 992 ? l.slice(0, 13) + '...' : l; } } },
+          x: { 
+            ticks: { 
+              callback(val) { 
+                const l = this.getLabelForValue(val); 
+                return l.length > 13 && window.innerWidth < 992 ? l.slice(0, 13) + '...' : l; 
+              } 
+            } 
+          },
         },
       },
+      plugins: [thresholdLinePlugin]
     });
   }
 }
