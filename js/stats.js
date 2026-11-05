@@ -197,4 +197,37 @@ async function init() {
   }
 }
 
+function applyGlobalChartTheme() {
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  const textColor = isDark ? '#ffffff' : '#666666';
+  const gridColor = isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.1)';
+
+  // 1. Set global Chart.js defaults for text and grid lines
+  Chart.defaults.color = textColor;
+  Chart.defaults.borderColor = gridColor;
+
+  if (Chart.defaults.plugins && Chart.defaults.plugins.legend) {
+    Chart.defaults.plugins.legend.labels.color = textColor;
+  }
+
+  // 2. Loop through all active instances registered in Chart.instances
+  Object.values(Chart.instances).forEach(chart => {
+    // Update Scale / Axis Colors
+    if (chart.options.scales) {
+      Object.keys(chart.options.scales).forEach(scaleKey => {
+        const scale = chart.options.scales[scaleKey];
+        if (scale.ticks) scale.ticks.color = textColor;
+        if (scale.grid) scale.grid.color = gridColor;
+      });
+    }
+
+    // Update Legend Colors
+    if (chart.options.plugins && chart.options.plugins.legend) {
+      chart.options.plugins.legend.labels.color = textColor;
+    }
+
+    chart.update();
+  });
+}
+
 init();

@@ -45,6 +45,10 @@ function updateDarkModeUI() {
       dividerEl.style.display = 'none';
     }
   }
+
+  if (typeof Chart !== 'undefined' && typeof applyGlobalChartTheme === 'function') {
+    applyGlobalChartTheme();
+  }
 }
 
 document.addEventListener('DOMContentLoaded', updateDarkModeUI);

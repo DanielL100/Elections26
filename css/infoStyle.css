@@ -78,6 +78,11 @@ h2 {
 [data-theme="dark"] .container-box {
   color: var(--text-light) !important;
   border-color: var(--border-dark) !important;
+  background: var(--bg-dark) !important;
+}
+
+[data-theme="dark"] #close {
+    color: white !important;
 }
 
 [data-theme="dark"] h4.mx-auto {
