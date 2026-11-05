@@ -103,7 +103,7 @@ async function init() {
 
   new Chart($id('wasted-votes'), {
     type: 'pie',
-    data: { labels: ['קולות מבוזבזים', 'שאר הקולות'], datasets: [{ data: [trashSeats, CONFIG.totalSeats - trashSeats], backgroundColor: ['rgb(255, 99, 132)', 'rgb(54, 162, 235)'], hoverOffset: 4 }] },
+    data: { labels: ['קולות מבוזבזים', 'שאר הקולות'], datasets: [{ data: [r.trashVotes, r.accepted - r.trashVotes], backgroundColor: ['rgb(255, 99, 132)', 'rgb(54, 162, 235)'], hoverOffset: 4 }] },
     options: { responsive: true, maintainAspectRatio: false, plugins: { tooltip: seatTip, legend: { position: 'right', rtl: true, onClick: noop } } },
   });
 
@@ -122,7 +122,7 @@ async function init() {
 
     new Chart($id('almost-enter'), {
       type: 'bar',
-      data: { labels: next.map((p) => p.name), datasets: [{ data: next.map((p) => seatEq(p.votes)), backgroundColor: ['#42A5F5', '#66BB6A', '#FFA726'], hoverOffset: 4 }] },
+      data: { labels: next.map((p) => p.name), datasets: [{ data: next.map((p) => p.precent), backgroundColor: ['#42A5F5', '#66BB6A', '#FFA726'], hoverOffset: 4 }] },
       options: {
         responsive: true, maintainAspectRatio: false,
         plugins: { tooltip: seatTip, legend: { display: false } },
