@@ -1,5 +1,8 @@
 # Elections26
 
+## קישור לאתר
+האתר רץ בכתובת: [https://daniell100.github.io/Elections26/](https://daniell100.github.io/Elections26/)
+
 ## איך מריצים?
 לצורך הרצה יש לשנות בקובץ config.js את:
 1. כתובת אתר ההצבעה ממנו נשלפים הנתונים
@@ -10,6 +13,45 @@
 6. המפלגות שיופיעו בפס המפלגות - אות ייצוג בקלפי, אות ייצוג באתר (אין לה משמעות), שם המפלגה ושיוך לבלוק
 
 בנוסף, האתר עושה cron job  לכאורה כל 15 דקות לאתר שבחרנו לשלוף ממנו נתונים. בפועל אפשר ללכת לעמוד Actions ולהריץ ידנית את `Run Election Data Scraper` בשביל למשוך את הנתונים העדכניים.
+
+## תיעוד האתר
+### קבצי ה-HTML
+#### index.html
+
+
+#### about.html
+
+
+#### stats.html
+
+
+#### terms.html
+
+
+#### embeded.html
+
+
+### קבצי ה-js
+#### core.js
+
+
+#### func.js
+
+
+#### layout.js
+
+
+#### partiesBarFunc.js
+
+
+#### stats.js
+
+
+#### darkmode.js
+
+
+### קובץ ה-scarper.py
+
 
 ## TODO:
 - [ ] להוסיף תיעוד
